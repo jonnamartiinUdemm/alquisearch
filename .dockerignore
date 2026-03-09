@@ -1,0 +1,10 @@
+# Docker — ignorar archivos innecesarios en la imagen
+backend/*.db
+backend/__pycache__
+backend/**/__pycache__
+**/*.pyc
+**/*.pyo
+.git
+.gitignore
+.env
+*.md

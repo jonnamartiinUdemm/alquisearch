@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlquiSearch España - Buscador de Alquileres</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="/static/styles.css?v=8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-home"></i>
+                    <span>AlquiSearch</span>
+                    <small>España</small>
+                </div>
+                <nav class="nav">
+                    <a href="#" class="nav-link active">Buscar</a>
+                    <a href="#" class="nav-link" id="favoritesNavLink"><i class="fas fa-heart"></i> Favoritos <span id="favCount" class="fav-count hidden">0</span></a>
+                    <a href="#" class="nav-link" id="trackingNavLink"><i class="fas fa-tasks"></i> Seguimiento <span id="trackCount" class="fav-count track-count hidden">0</span></a>
+                    <a href="#how-it-works" class="nav-link">Cómo funciona</a>
+                    <!-- User menu -->
+                    <div class="user-menu" id="userMenu">
+                        <button class="btn-user-anon" id="loginBtn" title="Iniciar sesión">
+                            <i class="fas fa-user-circle"></i>
+                            <span>Entrar</span>
+                        </button>
+                        <div class="user-menu-logged hidden" id="userMenuLogged">
+                            <button class="btn-user-avatar" id="userAvatarBtn">
+                                <i class="fas fa-user-circle"></i>
+                                <span id="userDisplayName">Usuario</span>
+                                <i class="fas fa-chevron-down" style="font-size:0.7rem"></i>
+                            </button>
+                            <div class="user-dropdown hidden" id="userDropdown">
+                                <div class="user-dropdown-info" id="userDropdownInfo"></div>
+                                <a href="/admin" class="user-dropdown-item admin-only hidden" id="adminPanelLink" target="_blank">
+                                    <i class="fas fa-shield-alt"></i> Panel Admin
+                                </a>
+                                <button class="user-dropdown-item" id="logoutBtn">
+                                    <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="darkModeToggle" class="dark-mode-btn" title="Cambiar tema">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero / Search Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Encuentra tu próximo hogar en España</h1>
+            <p class="hero-subtitle">Búsqueda integrada en Idealista, Fotocasa, Habitaclia, Pisos.com y HousingAnywhere</p>
+            
+            <div class="search-box">
+                <div class="search-main">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <input 
+                            type="text" 
+                            id="locationInput" 
+                            placeholder="¿Dónde quieres vivir? (ej: Madrid, Barcelona, Valencia...)"
+                            autocomplete="off"
+                        >
+                        <div id="citySuggestions" class="suggestions-dropdown hidden"></div>
+                    </div>
+                    <button id="searchBtn" class="btn-search">
+                        <i class="fas fa-search"></i>
+                        <span>Buscar</span>
+                    </button>
+                </div>
+
+                <button id="toggleFilters" class="btn-toggle-filters">
+                    <i class="fas fa-sliders-h"></i>
+                    Filtros avanzados
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+
+                <div id="filtersPanel" class="filters-panel hidden">
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label><i class="fas fa-euro-sign"></i> Precio máximo</label>
+                            <input type="number" id="maxPrice" value="2800" min="0" max="10000" step="50">
+                            <span class="filter-hint">€/mes</span>
+                        </div>
+                        <div class="filter-group">
+                            <label><i class="fas fa-bed"></i> Habitaciones mín.</label>
+                            <select id="minBedrooms">
+                                <option value="1">1+</option>
+                                <option value="2" selected>2+</option>
+                                <option value="3">3+</option>
+                                <option value="4">4+</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label><i class="fas fa-bath"></i> Baños mín.</label>
+                            <select id="minBathrooms">
+                                <option value="1">1+</option>
+                                <option value="2" selected>2+</option>
+                                <option value="3">3+</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label><i class="fas fa-calendar"></i> Disponible desde</label>
+                            <input type="date" id="availableFrom" value="2026-10-01">
+                        </div>
+                        <div class="filter-group">
+                            <label><i class="fas fa-ruler-combined"></i> Superficie mín.</label>
+                            <input type="number" id="minArea" placeholder="m²" min="0" max="500" step="5">
+                            <span class="filter-hint">m²</span>
+                        </div>
+                        <div class="filter-group">
+                            <label><i class="fas fa-ruler-combined"></i> Superficie máx.</label>
+                            <input type="number" id="maxArea" placeholder="m²" min="0" max="500" step="5">
+                            <span class="filter-hint">m²</span>
+                        </div>
+                        <div class="filter-group">
+                            <label><i class="fas fa-home"></i> Tipo de propiedad</label>
+                            <select id="propertyType">
+                                <option value="">Cualquiera</option>
+                                <option value="piso">Piso</option>
+                                <option value="casa">Casa</option>
+                                <option value="ático">Ático</option>
+                                <option value="dúplex">Dúplex</option>
+                                <option value="estudio">Estudio</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filters-toggles">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="petsAllowed" checked>
+                            <span class="toggle-switch"></span>
+                            <i class="fas fa-paw"></i> Admite mascotas
+                        </label>
+                        <label class="toggle-label" id="strictPetsToggle" title="Excluir también propiedades donde no se indica si admiten mascotas">
+                            <input type="checkbox" id="strictPets">
+                            <span class="toggle-switch"></span>
+                            <i class="fas fa-shield-alt"></i> Solo mascotas confirmadas
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="needElevator" checked>
+                            <span class="toggle-switch"></span>
+                            <i class="fas fa-arrows-alt-v"></i> Con ascensor
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="preferTerrace" checked>
+                            <span class="toggle-switch"></span>
+                            <i class="fas fa-sun"></i> Preferir terraza
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="preferBalcony" checked>
+                            <span class="toggle-switch"></span>
+                            <i class="fas fa-door-open"></i> Preferir balcón
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="preferTransport" checked>
+                            <span class="toggle-switch"></span>
+                            <i class="fas fa-bus"></i> Transporte público cerca
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="preferServices" checked>
+                            <span class="toggle-switch"></span>
+                            <i class="fas fa-store"></i> Servicios cercanos
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="longStay">
+                            <span class="toggle-switch"></span>
+                            <i class="fas fa-calendar-check"></i> Larga estancia
+                        </label>
+                        <label class="toggle-label sea-view-toggle hidden" id="seaViewToggle">
+                            <input type="checkbox" id="seaView">
+                            <span class="toggle-switch"></span>
+                            <i class="fas fa-water"></i> Vista al mar
+                        </label>
+                    </div>
+                    <div class="filters-platforms">
+                        <label class="platform-label">Buscar en:</label>
+                        <div class="platform-checkboxes">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="platform" value="idealista" checked>
+                                Idealista
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="platform" value="fotocasa" checked>
+                                Fotocasa
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="platform" value="habitaclia" checked>
+                                Habitaclia
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="platform" value="pisos.com" checked>
+                                Pisos.com
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="platform" value="housinganywhere" checked>
+                                HousingAnywhere
+                            </label>
+                        </div>
+                    </div>
+                    <div class="filters-actions">
+                        <button id="clearFiltersBtn" class="btn-clear-filters" title="Restablecer todos los filtros">
+                            <i class="fas fa-times-circle"></i> Limpiar filtros
+                        </button>
+                        <button id="shareUrlBtn" class="btn-share-url" title="Copiar enlace de búsqueda compartible">
+                            <i class="fas fa-share-alt"></i> Compartir búsqueda
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="resultsSection" class="results-section hidden">
+        <div class="container">
+            <!-- Results Header -->
+            <div class="results-header">
+                <div class="results-info">
+                    <h2 id="resultsTitle">Resultados</h2>
+                    <p id="resultsSubtitle"></p>
+                </div>
+                <div class="results-actions">
+                    <button id="compareBtn" class="btn-compare hidden" title="Comparar seleccionados">
+                        <i class="fas fa-columns"></i> Comparar (<span id="compareCount">0</span>)
+                    </button>
+                    <div class="view-toggle">
+                        <button id="gridViewBtn" class="view-btn active" title="Vista tarjetas">
+                            <i class="fas fa-th-large"></i>
+                        </button>
+                        <button id="mapViewBtn" class="view-btn" title="Vista mapa">
+                            <i class="fas fa-map-marked-alt"></i>
+                        </button>
+                    </div>
+                    <div class="sort-control">
+                        <label>Ordenar por:</label>
+                        <select id="sortBy">
+                            <option value="score">Relevancia</option>
+                            <option value="price-asc">Precio: menor a mayor</option>
+                            <option value="price-desc">Precio: mayor a menor</option>
+                            <option value="area">Superficie</option>
+                            <option value="bedrooms">Habitaciones</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Filters (client-side) -->
+            <div id="quickFilters" class="quick-filters hidden">
+                <div class="quick-filter">
+                    <label>Precio: <span id="qfPriceLabel">0 – 10000€</span></label>
+                    <input type="range" id="qfPriceMin" min="0" max="10000" step="50" value="0">
+                    <input type="range" id="qfPriceMax" min="0" max="10000" step="50" value="10000">
+                </div>
+                <div class="quick-filter">
+                    <label>Superficie: <span id="qfAreaLabel">0 – 500 m²</span></label>
+                    <input type="range" id="qfAreaMin" min="0" max="500" step="5" value="0">
+                    <input type="range" id="qfAreaMax" min="0" max="500" step="5" value="500">
+                </div>
+            </div>
+
+            <!-- Direct Search Links -->
+            <div id="directLinks" class="direct-links hidden">
+                <h3><i class="fas fa-external-link-alt"></i> Buscar directamente en:</h3>
+                <div id="directLinksGrid" class="direct-links-grid"></div>
+            </div>
+
+            <!-- Platform Error Messages -->
+            <div id="platformErrors" class="platform-errors hidden"></div>
+
+            <!-- Results Grid -->
+            <div id="resultsGrid" class="results-grid"></div>
+
+            <!-- Pagination -->
+            <div id="pagination" class="pagination hidden">
+                <button id="prevPage" class="btn-page" disabled><i class="fas fa-chevron-left"></i> Anterior</button>
+                <span id="pageInfo" class="page-info">Página 1</span>
+                <button id="nextPage" class="btn-page">Siguiente <i class="fas fa-chevron-right"></i></button>
+            </div>
+
+            <!-- Map View -->
+            <div id="mapContainer" class="map-container hidden">
+                <div id="map" class="map"></div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-state hidden">
+                <div class="spinner"></div>
+                <p>Buscando en todas las plataformas...</p>
+                <div class="loading-platforms">
+                    <span class="loading-platform" data-platform="idealista">
+                        <i class="fas fa-circle-notch fa-spin"></i> Idealista
+                    </span>
+                    <span class="loading-platform" data-platform="fotocasa">
+                        <i class="fas fa-circle-notch fa-spin"></i> Fotocasa
+                    </span>
+                    <span class="loading-platform" data-platform="habitaclia">
+                        <i class="fas fa-circle-notch fa-spin"></i> Habitaclia
+                    </span>
+                    <span class="loading-platform" data-platform="pisos.com">
+                        <i class="fas fa-circle-notch fa-spin"></i> Pisos.com
+                    </span>
+                    <span class="loading-platform" data-platform="housinganywhere">
+                        <i class="fas fa-circle-notch fa-spin"></i> HousingAnywhere
+                    </span>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state hidden">
+                <i class="fas fa-search"></i>
+                <h3>No se encontraron propiedades</h3>
+                <p>Intenta ampliar tus filtros de búsqueda o buscar en otra zona.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it Works Section -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <h2>¿Cómo funciona?</h2>
+            <div class="steps-grid">
+                <div class="step">
+                    <div class="step-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <h3>1. Elige tu zona</h3>
+                    <p>Indica la ciudad o zona de España donde quieres buscar tu próximo hogar.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon"><i class="fas fa-filter"></i></div>
+                    <h3>2. Aplica filtros</h3>
+                    <p>Configura tus preferencias: precio, habitaciones, mascotas, terraza y más.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon"><i class="fas fa-search"></i></div>
+                    <h3>3. Busca integrado</h3>
+                    <p>Buscamos simultáneamente en Idealista, Fotocasa, Habitaclia, Pisos.com y HousingAnywhere.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon"><i class="fas fa-check-circle"></i></div>
+                    <h3>4. Resultados filtrados</h3>
+                    <p>Filtramos estafas, verificamos criterios y ordenamos por relevancia.</p>
+                </div>
+            </div>
+
+            <div class="criteria-box">
+                <h3><i class="fas fa-clipboard-check"></i> Criterios de filtrado automático</h3>
+                <div class="criteria-grid">
+                    <div class="criteria-item include">
+                        <i class="fas fa-check"></i>
+                        <span>Mascotas permitidas</span>
+                    </div>
+                    <div class="criteria-item include">
+                        <i class="fas fa-check"></i>
+                        <span>Ascensor en plantas altas</span>
+                    </div>
+                    <div class="criteria-item include">
+                        <i class="fas fa-check"></i>
+                        <span>2+ habitaciones y baños</span>
+                    </div>
+                    <div class="criteria-item include">
+                        <i class="fas fa-check"></i>
+                        <span>Preferencia terraza/balcón</span>
+                    </div>
+                    <div class="criteria-item include">
+                        <i class="fas fa-check"></i>
+                        <span>Transporte público cercano</span>
+                    </div>
+                    <div class="criteria-item include">
+                        <i class="fas fa-check"></i>
+                        <span>Servicios en la zona</span>
+                    </div>
+                    <div class="criteria-item exclude">
+                        <i class="fas fa-times"></i>
+                        <span>Excluye posibles estafas</span>
+                    </div>
+                    <div class="criteria-item exclude">
+                        <i class="fas fa-times"></i>
+                        <span>Excluye zonas peligrosas</span>
+                    </div>
+                    <div class="criteria-item include">
+                        <i class="fas fa-check"></i>
+                        <span>Permite empadronamiento</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 AlquiSearch España — Buscador integrado de alquileres</p>
+            <p class="footer-note">Los resultados se obtienen de plataformas públicas. Verifica siempre la información directamente con el anunciante.</p>
+        </div>
+    </footer>
+
+    <!-- Property Detail Modal -->
+    <div id="propertyModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <button class="modal-close" id="modalClose">
+                <i class="fas fa-times"></i>
+            </button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Favorites Panel (overlay) -->
+    <div id="favoritesPanel" class="favorites-panel hidden">
+        <div class="favorites-overlay"></div>
+        <div class="favorites-content">
+            <div class="favorites-header">
+                <h2><i class="fas fa-heart"></i> Mis Favoritos</h2>
+                <button class="modal-close" id="closeFavorites"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="favoritesGrid" class="favorites-grid"></div>
+            <div id="favoritesEmpty" class="empty-state">
+                <i class="fas fa-heart"></i>
+                <h3>Sin favoritos aún</h3>
+                <p>Haz clic en el corazón de una propiedad para guardarla aquí.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compare Modal -->
+    <div id="compareModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-wide">
+            <button class="modal-close" id="closeCompare"><i class="fas fa-times"></i></button>
+            <h2 style="margin-bottom:16px;"><i class="fas fa-columns"></i> Comparar propiedades</h2>
+            <div id="compareBody" class="compare-grid"></div>
+        </div>
+    </div>
+
+    <!-- Tracking Panel (kanban pipeline) -->
+    <div id="trackingPanel" class="tracking-panel hidden">
+        <div class="tracking-overlay"></div>
+        <div class="tracking-content">
+            <div class="tracking-header">
+                <h2><i class="fas fa-tasks"></i> Seguimiento de alquileres</h2>
+                <button class="modal-close" id="closeTracking"><i class="fas fa-times"></i></button>
+            </div>
+            <p class="tracking-subtitle">Arrastra o usa los botones para mover propiedades por las etapas del proceso.</p>
+            <div id="trackingBoard" class="tracking-board"></div>
+        </div>
+    </div>
+
+    <!-- Login / Register Modal -->
+    <div id="loginModal" class="modal hidden">
+        <div class="modal-overlay" id="loginModalOverlay"></div>
+        <div class="modal-content modal-auth">
+            <button class="modal-close" id="closeLoginModal"><i class="fas fa-times"></i></button>
+            <!-- Tabs -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tabLoginBtn" data-tab="login">Iniciar sesión</button>
+                <button class="auth-tab" id="tabRegisterBtn" data-tab="register">Registrarse</button>
+            </div>
+            <!-- Login form -->
+            <form id="loginForm" class="auth-form">
+                <div class="auth-logo"><i class="fas fa-home"></i> AlquiSearch</div>
+                <div class="form-field">
+                    <label>Usuario o email</label>
+                    <input type="text" id="loginUsername" placeholder="usuario o email" autocomplete="username"/>
+                </div>
+                <div class="form-field">
+                    <label>Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="contraseña" autocomplete="current-password"/>
+                </div>
+                <div id="loginError" class="auth-error hidden"></div>
+                <button type="submit" class="btn-auth-submit">Entrar <i class="fas fa-sign-in-alt"></i></button>
+                <p class="auth-hint">Admin por defecto: <code>admin</code> / <code>Admin1234!</code></p>
+            </form>
+            <!-- Register form -->
+            <form id="registerForm" class="auth-form hidden">
+                <div class="auth-logo"><i class="fas fa-user-plus"></i> Crear cuenta</div>
+                <div class="form-field">
+                    <label>Nombre de usuario</label>
+                    <input type="text" id="regUsername" placeholder="min. 3 caracteres" autocomplete="username"/>
+                </div>
+                <div class="form-field">
+                    <label>Email</label>
+                    <input type="email" id="regEmail" placeholder="tu@email.com" autocomplete="email"/>
+                </div>
+                <div class="form-field">
+                    <label>Contraseña</label>
+                    <input type="password" id="regPassword" placeholder="min. 8 chars, 1 mayúscula, 1 número" autocomplete="new-password"/>
+                </div>
+                <div id="registerError" class="auth-error hidden"></div>
+                <button type="submit" class="btn-auth-submit">Crear cuenta <i class="fas fa-user-plus"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Leaflet JS para mapa -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="/static/app.js?v=9"></script>
+</body>
+</html>

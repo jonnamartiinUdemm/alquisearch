@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administrador · AlquiSearch España</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #f8fafc; --bg2: #ffffff; --border: #e2e8f0;
+            --text: #1e293b; --text2: #64748b;
+            --primary: #3b82f6; --primary-dark: #1d4ed8;
+            --danger: #ef4444; --danger-dark: #dc2626;
+            --success: #10b981; --warning: #f59e0b;
+            --radius: 8px; --shadow: 0 1px 3px rgba(0,0,0,.1);
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* ---- Loader ---- */
+        #authLoader { display: flex; align-items: center; justify-content: center; min-height: 100vh; font-size: 1.1rem; color: var(--text2); gap: .75rem; }
+
+        /* ---- Header ---- */
+        .admin-header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: .875rem 1.5rem; display: flex; align-items: center; gap: 1rem; }
+        .admin-header a { text-decoration: none; color: var(--text2); font-size: .9rem; display: flex; align-items: center; gap: .4rem; }
+        .admin-header a:hover { color: var(--primary); }
+        .admin-title { font-weight: 700; font-size: 1.15rem; margin-left: auto; }
+        .admin-whoami { font-size: .85rem; color: var(--text2); }
+
+        /* ---- Main ---- */
+        .admin-main { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+
+        /* ---- Section card ---- */
+        .section-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 2rem; overflow: hidden; }
+        .section-card-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .section-card-title { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: .5rem; }
+
+        /* ---- Table ---- */
+        .user-table { width: 100%; border-collapse: collapse; }
+        .user-table th, .user-table td { padding: .75rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border); font-size: .9rem; }
+        .user-table th { background: #f1f5f9; font-weight: 600; color: var(--text2); text-transform: uppercase; font-size: .75rem; letter-spacing: .05em; }
+        .user-table tr:last-child td { border-bottom: none; }
+        .user-table tr:hover td { background: #f8fafc; }
+        .badge-admin { background: #dbeafe; color: #1e40af; padding: .2em .6em; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+        .badge-inactive { background: #fee2e2; color: #991b1b; padding: .2em .6em; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+        .badge-active { background: #dcfce7; color: #166534; padding: .2em .6em; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+
+        /* ---- Buttons ---- */
+        .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem 1rem; border-radius: 6px; border: none; cursor: pointer; font-size: .875rem; font-weight: 500; transition: background .15s; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: var(--danger-dark); }
+        .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+        .btn-outline:hover { background: #f1f5f9; }
+        .btn-sm { padding: .3rem .65rem; font-size: .8rem; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+        /* ---- Modal ---- */
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .modal-backdrop.hidden { display: none; }
+        .modal-box { background: var(--bg2); border-radius: var(--radius); box-shadow: 0 20px 60px rgba(0,0,0,.25); width: 100%; max-width: 460px; overflow: hidden; }
+        .modal-box-header { padding: 1.1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-weight: 700; }
+        .modal-close { background: none; border: none; cursor: pointer; color: var(--text2); font-size: 1.2rem; }
+        .modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+        .form-row { display: flex; flex-direction: column; gap: .35rem; }
+        .form-row label { font-size: .875rem; font-weight: 500; }
+        .form-row input, .form-row select { padding: .55rem .75rem; border: 1px solid var(--border); border-radius: 6px; font-size: .9rem; background: var(--bg); color: var(--text); }
+        .form-row input:focus, .form-row select:focus { outline: none; border-color: var(--primary); }
+        .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; gap: .75rem; justify-content: flex-end; }
+        .error-msg { color: var(--danger); font-size: .85rem; min-height: 1.2em; }
+
+        /* ---- Toast ---- */
+        #toastAdmin { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1e293b; color: #fff; padding: .75rem 1.25rem; border-radius: 8px; font-size: .9rem; z-index: 9999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 700px) {
+            .user-table th:nth-child(3), .user-table td:nth-child(3),
+            .user-table th:nth-child(4), .user-table td:nth-child(4) { display: none; }
+            .admin-whoami { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Auth loader -->
+<div id="authLoader"><i class="fas fa-spinner fa-spin"></i> Verificando acceso…</div>
+
+<!-- Main layout (hidden until auth confirmed) -->
+<div id="adminShell" style="display:none;">
+
+    <!-- Header -->
+    <header class="admin-header">
+        <a href="/"><i class="fas fa-arrow-left"></i> Volver a AlquiSearch</a>
+        <span class="admin-title"><i class="fas fa-shield-halved"></i> Panel de Administración</span>
+        <span class="admin-whoami" id="adminWhoami"></span>
+        <button class="btn btn-outline btn-sm" id="adminLogoutBtn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
+    </header>
+
+    <main class="admin-main">
+
+        <!-- Usuarios -->
+        <div class="section-card">
+            <div class="section-card-header">
+                <span class="section-card-title"><i class="fas fa-users"></i> Usuarios <span id="userCountBadge" style="font-weight:400;color:var(--text2);margin-left:.4rem;"></span></span>
+                <button class="btn btn-primary btn-sm" id="createUserBtn"><i class="fas fa-plus"></i> Nuevo usuario</button>
+            </div>
+            <div id="usersTableWrap">
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Usuario</th>
+                            <th>Email</th>
+                            <th>Creado</th>
+                            <th>Estado</th>
+                            <th>Rol</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text2);">Cargando…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+</div>
+
+<!-- Create / Edit User Modal -->
+<div class="modal-backdrop hidden" id="userModal">
+    <div class="modal-box">
+        <div class="modal-box-header">
+            <span id="userModalTitle">Nuevo usuario</span>
+            <button class="modal-close" onclick="closeUserModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-row">
+                <label for="uUsername">Nombre de usuario *</label>
+                <input type="text" id="uUsername" placeholder="johndoe" autocomplete="off">
+            </div>
+            <div class="form-row">
+                <label for="uEmail">Email</label>
+                <input type="email" id="uEmail" placeholder="correo@ejemplo.com">
+            </div>
+            <div class="form-row" id="uPasswordRow">
+                <label for="uPassword">Contraseña *</label>
+                <input type="password" id="uPassword" placeholder="Min. 8 caracteres, 1 mayúscula, 1 número">
+            </div>
+            <div class="form-row">
+                <label for="uIsAdmin">Rol</label>
+                <select id="uIsAdmin">
+                    <option value="0">Usuario</option>
+                    <option value="1">Administrador</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="uIsActive">Estado</label>
+                <select id="uIsActive">
+                    <option value="1">Activo</option>
+                    <option value="0">Inactivo</option>
+                </select>
+            </div>
+            <div class="error-msg" id="userModalError"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeUserModal()">Cancelar</button>
+            <button class="btn btn-primary" id="userModalSave" onclick="saveUser()"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete confirm modal -->
+<div class="modal-backdrop hidden" id="deleteModal">
+    <div class="modal-box">
+        <div class="modal-box-header">
+            <span>Confirmar eliminación</span>
+            <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>¿Seguro que deseas eliminar al usuario <strong id="deleteUserName"></strong>? Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeDeleteModal()">Cancelar</button>
+            <button class="btn btn-danger" id="confirmDeleteBtn"><i class="fas fa-trash"></i> Eliminar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toastAdmin"></div>
+
+<script>
+// ========== Config ==========
+const token = localStorage.getItem('aq_auth_token');
+let adminUser = null;
+let editingUserId = null;
+let deletingUserId = null;
+
+// ========== Auth check ==========
+async function checkAuth() {
+    if (!token) { redirectHome(); return; }
+    try {
+        const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) { redirectHome(); return; }
+        const user = await res.json();
+        if (!user.is_admin) { redirectHome(); return; }
+        adminUser = user;
+        document.getElementById('authLoader').style.display = 'none';
+        document.getElementById('adminShell').style.display = 'block';
+        document.getElementById('adminWhoami').textContent = `Admin: ${user.username}`;
+        loadUsers();
+    } catch { redirectHome(); }
+}
+function redirectHome() { window.location.href = '/'; }
+
+// ========== API helpers ==========
+function authHeaders(json = false) {
+    const h = { Authorization: `Bearer ${token}` };
+    if (json) h['Content-Type'] = 'application/json';
+    return h;
+}
+
+// ========== Load users ==========
+async function loadUsers() {
+    try {
+        const res = await fetch('/api/admin/users', { headers: authHeaders() });
+        const users = await res.json();
+        document.getElementById('userCountBadge').textContent = `(${users.length})`;
+        const tbody = document.getElementById('usersTableBody');
+        if (!users.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text2);">Sin usuarios</td></tr>';
+            return;
+        }
+        tbody.innerHTML = users.map(u => `
+            <tr>
+                <td>${u.id}</td>
+                <td><strong>${escH(u.username)}</strong></td>
+                <td>${escH(u.email || '—')}</td>
+                <td>${u.created_at ? u.created_at.slice(0, 10) : '—'}</td>
+                <td>${u.is_active ? '<span class="badge-active">Activo</span>' : '<span class="badge-inactive">Inactivo</span>'}</td>
+                <td>${u.is_admin ? '<span class="badge-admin">Admin</span>' : 'Usuario'}</td>
+                <td style="display:flex;gap:.4rem;flex-wrap:wrap;">
+                    <button class="btn btn-outline btn-sm" onclick="openEditModal(${u.id})"><i class="fas fa-edit"></i> Editar</button>
+                    ${!u.is_admin ? `<button class="btn btn-danger btn-sm" onclick="openDeleteModal(${u.id}, '${escH(u.username)}')"><i class="fas fa-trash"></i></button>` : ''}
+                </td>
+            </tr>
+        `).join('');
+    } catch { showToast('Error al cargar usuarios', 'danger'); }
+}
+
+// ========== Create / Edit ==========
+document.getElementById('createUserBtn').addEventListener('click', () => {
+    editingUserId = null;
+    document.getElementById('userModalTitle').textContent = 'Nuevo usuario';
+    document.getElementById('uPasswordRow').style.display = '';
+    document.getElementById('uUsername').value = '';
+    document.getElementById('uEmail').value = '';
+    document.getElementById('uPassword').value = '';
+    document.getElementById('uIsAdmin').value = '0';
+    document.getElementById('uIsActive').value = '1';
+    document.getElementById('userModalError').textContent = '';
+    document.getElementById('userModal').classList.remove('hidden');
+});
+
+async function openEditModal(userId) {
+    try {
+        const res = await fetch(`/api/admin/users/${userId}`, { headers: authHeaders() });
+        const u = await res.json();
+        editingUserId = userId;
+        document.getElementById('userModalTitle').textContent = `Editar usuario #${userId}`;
+        document.getElementById('uPasswordRow').style.display = 'none'; // no change password on edit for simplicity
+        document.getElementById('uUsername').value = u.username || '';
+        document.getElementById('uEmail').value = u.email || '';
+        document.getElementById('uPassword').value = '';
+        document.getElementById('uIsAdmin').value = u.is_admin ? '1' : '0';
+        document.getElementById('uIsActive').value = u.is_active ? '1' : '0';
+        document.getElementById('userModalError').textContent = '';
+        document.getElementById('userModal').classList.remove('hidden');
+    } catch { showToast('Error al cargar usuario', 'danger'); }
+}
+
+function closeUserModal() {
+    document.getElementById('userModal').classList.add('hidden');
+    editingUserId = null;
+}
+
+async function saveUser() {
+    const btn = document.getElementById('userModalSave');
+    btn.disabled = true;
+    const errEl = document.getElementById('userModalError');
+    errEl.textContent = '';
+
+    const payload = {
+        username: document.getElementById('uUsername').value.trim(),
+        email: document.getElementById('uEmail').value.trim() || undefined,
+        is_admin: document.getElementById('uIsAdmin').value === '1',
+        is_active: document.getElementById('uIsActive').value === '1',
+    };
+    if (!editingUserId) {
+        payload.password = document.getElementById('uPassword').value;
+    }
+
+    try {
+        let res;
+        if (editingUserId) {
+            res = await fetch(`/api/admin/users/${editingUserId}`, { method: 'PUT', headers: authHeaders(true), body: JSON.stringify(payload) });
+        } else {
+            res = await fetch('/api/admin/users', { method: 'POST', headers: authHeaders(true), body: JSON.stringify(payload) });
+        }
+        const data = await res.json();
+        if (!res.ok) {
+            errEl.textContent = data.detail || 'Error al guardar';
+        } else {
+            closeUserModal();
+            loadUsers();
+            showToast(editingUserId ? 'Usuario actualizado' : 'Usuario creado', 'success');
+        }
+    } catch { errEl.textContent = 'Error de conexión'; }
+    finally { btn.disabled = false; }
+}
+
+// ========== Delete ==========
+function openDeleteModal(userId, username) {
+    deletingUserId = userId;
+    document.getElementById('deleteUserName').textContent = username;
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+    deletingUserId = null;
+}
+document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+    if (!deletingUserId) return;
+    try {
+        const res = await fetch(`/api/admin/users/${deletingUserId}`, { method: 'DELETE', headers: authHeaders() });
+        if (res.ok) { closeDeleteModal(); loadUsers(); showToast('Usuario eliminado', 'success'); }
+        else { const d = await res.json(); showToast(d.detail || 'Error', 'danger'); }
+    } catch { showToast('Error de conexión', 'danger'); }
+});
+
+// ========== Logout ==========
+document.getElementById('adminLogoutBtn').addEventListener('click', () => {
+    fetch('/api/auth/logout', { method: 'POST', headers: authHeaders() }).catch(() => {});
+    localStorage.removeItem('aq_auth_token');
+    redirectHome();
+});
+
+// ========== Helpers ==========
+function escH(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+let toastTimer;
+function showToast(msg, type) {
+    const el = document.getElementById('toastAdmin');
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.style.background = type === 'danger' ? '#ef4444' : type === 'success' ? '#10b981' : '#1e293b';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+// Close modals on backdrop click
+document.getElementById('userModal').addEventListener('click', e => { if (e.target === document.getElementById('userModal')) closeUserModal(); });
+document.getElementById('deleteModal').addEventListener('click', e => { if (e.target === document.getElementById('deleteModal')) closeDeleteModal(); });
+
+// ========== Init ==========
+checkAuth();
+</script>
+</body>
+</html>
