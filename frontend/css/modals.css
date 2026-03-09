@@ -1,0 +1,532 @@
+/* ---- Modal Base ---- */
+/* ---- Modal ---- */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    position: relative;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    max-width: 700px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    animation: modalIn 0.3s ease;
+}
+
+@keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(0,0,0,0.5);
+    color: var(--white);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    z-index: 10;
+}
+
+.modal-close:hover {
+    background: rgba(0,0,0,0.8);
+}
+
+.modal-image {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+}
+
+.modal-body-content {
+    padding: 24px;
+}
+
+.modal-price {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 4px;
+}
+
+.modal-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.modal-location {
+    color: var(--gray-500);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.modal-features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.modal-feature {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    padding: 8px 12px;
+    background: var(--gray-50);
+    border-radius: var(--radius-sm);
+}
+
+.modal-feature i {
+    color: var(--primary);
+    width: 20px;
+    text-align: center;
+}
+
+.modal-description {
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    line-height: 1.7;
+}
+
+.modal-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--primary);
+    color: var(--white);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: var(--transition);
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+}
+
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: var(--transition);
+    border: 1px solid var(--gray-200);
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.btn-secondary:hover {
+    background: var(--gray-200);
+}
+
+
+/* ---- Hidden utility ---- */
+/* ---- Hidden utility ---- */
+.hidden {
+    display: none !important;
+}
+
+
+/* ---- Compare Button ---- */
+/* ========== Compare Button in Results Header ========== */
+.btn-compare {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-compare:hover {
+    background: var(--primary-dark);
+}
+
+
+/* ---- Compare Table ---- */
+/* ========== Compare Modal Table ========== */
+.modal-wide {
+    max-width: 900px;
+    width: 95vw;
+}
+
+.compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.compare-table th,
+.compare-table td {
+    padding: 8px 12px;
+    text-align: center;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.compare-table th {
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+}
+
+.compare-table .compare-label {
+    text-align: left;
+    font-weight: 600;
+    color: var(--gray-600);
+    background: var(--gray-50);
+}
+
+.dark-theme .compare-table .compare-label {
+    background: var(--bg);
+    color: var(--text-secondary);
+}
+
+.dark-theme .compare-table td {
+    border-color: var(--gray-200);
+    color: var(--text);
+}
+
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    border-radius: var(--radius-sm);
+}
+
+
+/* ---- Favorites Panel ---- */
+/* ========== Favorites Panel ========== */
+.favorites-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.favorites-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+}
+
+.favorites-content {
+    position: relative;
+    width: min(520px, 90vw);
+    height: 100%;
+    background: var(--bg, white);
+    box-shadow: var(--shadow-lg);
+    padding: 24px;
+    overflow-y: auto;
+    z-index: 1;
+}
+
+.dark-theme .favorites-content {
+    background: var(--bg-secondary);
+}
+
+.favorites-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.favorites-header h2 {
+    font-size: 1.2rem;
+    color: var(--gray-800);
+}
+
+.dark-theme .favorites-header h2 {
+    color: var(--text);
+}
+
+.favorites-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.favorites-grid .property-card {
+    display: flex;
+    flex-direction: row;
+    height: auto;
+}
+
+.favorites-grid .property-card-image {
+    width: 140px;
+    min-height: 120px;
+    flex-shrink: 0;
+}
+
+.favorites-grid .property-card-image img {
+    height: 100%;
+    object-fit: cover;
+}
+
+
+/* ---- Pagination ---- */
+/* ========== Pagination ========== */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin: 24px 0;
+    padding: 12px;
+}
+
+.btn-page {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--gray-700);
+    transition: all 0.2s;
+}
+
+.btn-page:hover:not(:disabled) {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.btn-page:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.dark-theme .btn-page {
+    background: var(--bg-secondary);
+    border-color: var(--gray-200);
+    color: var(--text);
+}
+
+.page-info {
+    font-size: 0.85rem;
+    color: var(--gray-500);
+}
+
+
+/* ---- Modal Fav Button ---- */
+/* ========== Modal fav btn active ========== */
+.modal-fav-btn.active {
+    color: #ef4444;
+    border-color: #ef4444;
+}
+
+.modal-fav-btn.active .fa-heart {
+    color: #ef4444;
+}
+
+
+/* ---- Toast ---- */
+/* ========== Toast Notification ========== */
+#appToast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--gray-800, #1f2937);
+    color: #fff;
+    padding: 10px 22px;
+    border-radius: 24px;
+    font-size: 0.92rem;
+    font-weight: 500;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+}
+
+#appToast.toast-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+
+/* ---- Auth Modal ---- */
+/* ========== Auth Modal ========== */
+.modal-auth {
+    max-width: 400px;
+    width: 92vw;
+    padding: 32px 28px;
+}
+
+.auth-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--gray-100);
+    margin-bottom: 24px;
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 10px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--gray-500);
+    transition: all 0.2s;
+}
+
+.auth-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.auth-logo {
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 20px;
+}
+
+.auth-form { display: flex; flex-direction: column; gap: 14px; }
+
+.form-field { display: flex; flex-direction: column; gap: 5px; }
+
+.form-field label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--gray-600);
+}
+
+.form-field input {
+    padding: 9px 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    background: var(--white);
+    color: var(--gray-900);
+    transition: border-color 0.2s;
+}
+
+.form-field input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+.auth-error {
+    background: var(--danger-light);
+    color: #991b1b;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+}
+
+.btn-auth-submit {
+    padding: 11px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-auth-submit:hover { background: var(--primary-dark); }
+
+.auth-hint {
+    font-size: 0.76rem;
+    color: var(--gray-400);
+    text-align: center;
+}
+
+.auth-hint code {
+    background: var(--gray-100);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+.dark-theme .form-field input {
+    background: var(--bg) !important;
+    color: var(--text) !important;
+    border-color: var(--gray-200) !important;
+}
+

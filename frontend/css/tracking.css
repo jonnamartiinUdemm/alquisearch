@@ -1,0 +1,290 @@
+/* ========== Tracking Panel (Kanban) ========== */
+.tracking-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.tracking-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+}
+
+.tracking-content {
+    position: relative;
+    background: var(--bg, white);
+    border-radius: var(--radius-xl);
+    padding: 28px;
+    width: 100%;
+    max-width: 1300px;
+    z-index: 1;
+    box-shadow: var(--shadow-lg);
+    margin: auto;
+}
+
+.dark-theme .tracking-content {
+    background: var(--bg-secondary);
+}
+
+.tracking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.tracking-header h2 {
+    font-size: 1.2rem;
+    color: var(--gray-800);
+}
+
+.dark-theme .tracking-header h2 { color: var(--text); }
+
+.tracking-subtitle {
+    font-size: 0.85rem;
+    color: var(--gray-500);
+    margin-bottom: 20px;
+}
+
+.tracking-board {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    min-height: 300px;
+}
+
+.tracking-board::-webkit-scrollbar { height: 6px; }
+.tracking-board::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+
+.kanban-col {
+    flex: 0 0 200px;
+    background: var(--gray-50);
+    border-radius: var(--radius);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 200px;
+}
+
+.dark-theme .kanban-col { background: var(--bg-card); }
+
+.kanban-col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.kanban-col-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--gray-500);
+}
+
+.dark-theme .kanban-col-title { color: var(--text-secondary); }
+
+.kanban-col-count {
+    background: var(--gray-200);
+    color: var(--gray-600);
+    border-radius: 99px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 1px 7px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.dark-theme .kanban-col-count { background: var(--gray-100); color: var(--text-secondary); }
+
+/* Stage label colors */
+.kanban-col[data-stage="alquilado"] .kanban-col-title  { color: #059669; }
+.kanban-col[data-stage="alquilado"] .kanban-col-count  { background:#d1fae5; color:#065f46; }
+.kanban-col[data-stage="descartado"] .kanban-col-title { color: #dc2626; }
+.kanban-col[data-stage="descartado"] .kanban-col-count { background:#fee2e2; color:#991b1b; }
+.kanban-col[data-stage="contrato"] .kanban-col-title   { color: #7c3aed; }
+.kanban-col[data-stage="contrato"] .kanban-col-count   { background:#ede9fe; color:#5b21b6; }
+
+.kanban-card {
+    background: white;
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    cursor: pointer;
+    transition: box-shadow 0.2s, transform 0.15s;
+}
+
+.kanban-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.dark-theme .kanban-card {
+    background: var(--bg-secondary);
+    border-color: var(--gray-200);
+}
+
+.kanban-card-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 4px;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.dark-theme .kanban-card-title { color: var(--text); }
+
+.kanban-card-price {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 6px;
+}
+
+.kanban-card-notes {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    font-style: italic;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.kanban-card-actions {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.btn-stage {
+    border: none;
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 7px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-stage:hover { background: var(--primary); color: white; }
+
+.btn-stage-remove {
+    background: var(--danger-light);
+    color: #dc2626;
+}
+
+.btn-stage-remove:hover { background: #ef4444; color: white; }
+
+.btn-track-notes {
+    background: var(--gray-100);
+    color: var(--gray-600);
+}
+
+.btn-track-notes:hover { background: var(--gray-200); }
+
+.dark-theme .btn-stage { background: rgba(37,99,235,0.15); color: #93c5fd; }
+.dark-theme .btn-stage-remove { background: rgba(239,68,68,0.15); color: #fca5a5; }
+.dark-theme .btn-track-notes { background: var(--gray-100); color: var(--text-secondary); }
+
+/* Track button in property card */
+.btn-track-card {
+    background: rgba(255,255,255,0.92);
+    border: none;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
+    position: static;
+    font-size: 0.85rem;
+    color: var(--gray-400);
+}
+
+.btn-track-card:hover,
+.btn-track-card.active {
+    color: #f59e0b;
+    background: rgba(255,255,255,1);
+    transform: scale(1.1);
+}
+
+.dark-theme .btn-track-card {
+    background: rgba(30,41,59,0.92);
+    color: var(--gray-300);
+}
+
+.dark-theme .btn-track-card:hover,
+.dark-theme .btn-track-card.active {
+    color: #fbbf24;
+    background: rgba(30,41,59,1);
+}
+
+/* Quick-stage picker dropdown on card */
+.stage-picker {
+    position: absolute;
+    bottom: 60px;
+    right: 8px;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    z-index: 20;
+    min-width: 170px;
+    overflow: hidden;
+}
+
+.dark-theme .stage-picker {
+    background: var(--bg-secondary);
+    border-color: var(--gray-200);
+}
+
+.stage-picker-item {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stage-picker-item:hover { background: var(--primary-xlight); color: var(--primary); }
+
+.dark-theme .stage-picker-item { color: var(--text); }
+.dark-theme .stage-picker-item:hover { background: rgba(37,99,235,0.15); color: #93c5fd; }
+
+.stage-picker-title {
+    padding: 6px 12px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--gray-400);
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.dark-theme .stage-picker-title { background: var(--bg-card); }

@@ -1,0 +1,431 @@
+/* ---- Search Box and Filters ---- */
+/* ---- Search Box ---- */
+.search-box {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-lg);
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: left;
+    color: var(--gray-800);
+}
+
+.search-main {
+    display: flex;
+    gap: 12px;
+}
+
+.search-input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--gray-50);
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    padding: 0 16px;
+    transition: var(--transition);
+}
+
+.search-input-wrapper:focus-within {
+    border-color: var(--primary);
+    background: var(--white);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+.search-input-wrapper i {
+    color: var(--gray-400);
+    font-size: 1.1rem;
+}
+
+.search-input-wrapper input {
+    flex: 1;
+    border: none;
+    background: none;
+    padding: 14px 12px;
+    font-size: 1rem;
+    outline: none;
+    color: var(--gray-800);
+    font-family: inherit;
+}
+
+.search-input-wrapper input::placeholder {
+    color: var(--gray-400);
+}
+
+.btn-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--primary);
+    color: var(--white);
+    border: none;
+    padding: 14px 28px;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.btn-search:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.btn-search:active {
+    transform: translateY(0);
+}
+
+/* Suggestions dropdown */
+.suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 50;
+    margin-top: 4px;
+}
+
+.suggestions-dropdown .suggestion-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #1f2937 !important;
+    background-color: #ffffff !important;
+}
+
+.suggestions-dropdown .suggestion-item:hover {
+    background-color: #eff6ff !important;
+    color: #2563eb !important;
+}
+
+.suggestions-dropdown .suggestion-item i {
+    color: #9ca3af !important;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+/* Toggle Filters */
+.btn-toggle-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: var(--gray-500);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 12px 0 0;
+    transition: var(--transition);
+    font-family: inherit;
+}
+
+.btn-toggle-filters:hover {
+    color: var(--primary);
+}
+
+.btn-toggle-filters .fa-chevron-down {
+    font-size: 0.75rem;
+    transition: transform 0.3s ease;
+}
+
+.btn-toggle-filters.active .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+/* Filters Panel */
+.filters-panel {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--gray-200);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.filter-group label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--gray-600);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-group label i {
+    color: var(--primary);
+    font-size: 0.8rem;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 10px 12px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    background: var(--gray-50);
+    color: var(--gray-800);
+    transition: var(--transition);
+    font-family: inherit;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: var(--white);
+}
+
+.filter-hint {
+    font-size: 0.75rem;
+    color: var(--gray-400);
+}
+
+/* Toggle Switches */
+.filters-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    background: var(--gray-50);
+    padding: 8px 14px;
+    border-radius: 24px;
+    border: 1.5px solid var(--gray-200);
+    transition: var(--transition);
+    user-select: none;
+}
+
+.toggle-label:has(input:checked) {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary-dark);
+}
+
+.toggle-label input {
+    display: none;
+}
+
+.toggle-switch {
+    display: none;
+}
+
+.toggle-label i {
+    font-size: 0.85rem;
+}
+
+/* Platform Checkboxes */
+.filters-platforms {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.platform-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--gray-600);
+}
+
+.platform-checkboxes {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: var(--gray-600);
+    background: var(--gray-50);
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--gray-200);
+    transition: var(--transition);
+}
+
+.checkbox-label:has(input:checked) {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary-dark);
+}
+
+.checkbox-label input {
+    accent-color: var(--primary);
+}
+
+
+/* ---- Quick Filters ---- */
+/* ========== Quick Filters ========== */
+.quick-filters {
+    display: flex;
+    gap: 24px;
+    padding: 12px 16px;
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.dark-theme .quick-filters {
+    background: var(--bg-secondary);
+}
+
+.quick-filter {
+    flex: 1;
+    min-width: 200px;
+}
+
+.quick-filter label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--gray-600);
+    margin-bottom: 4px;
+}
+
+.dark-theme .quick-filter label {
+    color: var(--text-secondary);
+}
+
+.quick-filter input[type="range"] {
+    width: calc(50% - 4px);
+    accent-color: var(--primary);
+}
+
+
+/* ---- Clear / Share Buttons ---- */
+/* ========== Clear + Share buttons in filter panel ========== */
+.filters-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
+.btn-clear-filters,
+.btn-share-url {
+    flex: 1;
+    min-width: 120px;
+    padding: 8px 14px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    background: var(--white);
+    color: var(--gray-600);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.btn-clear-filters:hover {
+    background: #fef2f2;
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.btn-share-url:hover {
+    background: #eff6ff;
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.dark-theme .btn-clear-filters,
+.dark-theme .btn-share-url {
+    background: var(--gray-700);
+    border-color: var(--gray-600);
+    color: var(--gray-300);
+}
+
+.dark-theme .btn-clear-filters:hover {
+    background: rgba(239,68,68,0.15);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.dark-theme .btn-share-url:hover {
+    background: rgba(37,99,235,0.15);
+    border-color: var(--primary);
+    color: #93c5fd;
+}
+
+.dark-theme #appToast {
+    background: var(--gray-700);
+}
+
+
+/* ---- Search History ---- */
+/* ========== Search History Suggestions ========== */
+.suggestion-history {
+    color: var(--gray-500) !important;
+    font-style: italic;
+}
+
+.suggestion-history i {
+    color: var(--gray-400);
+}
+
+.dark-theme .suggestion-history {
+    color: var(--text-secondary) !important;
+}
+
+
+/* ---- Page Background ---- */
+/* ========== Page background tied to --bg ========== */
+body {
+    background-color: var(--bg);
+}
+
+.dark-theme body {
+    background-color: var(--bg);
+}
+
