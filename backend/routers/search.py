@@ -96,8 +96,12 @@ async def search_properties(params: SearchParams):
             if loc_n in f"{city_n} {prov_n} {hood_n}":
                 demo_filtered.append(prop.model_copy(deep=True))
 
+    # Filtrar datos demo por plataformas seleccionadas
+    selected_platforms = set(params.platforms)
+    demo_filtered = [p for p in demo_filtered if p.platform in selected_platforms]
+
     all_properties.extend(demo_filtered)
-    print(f"[Demo] {len(demo_filtered)} propiedades añadidas")
+    print(f"[Demo] {len(demo_filtered)} propiedades añadidas (plataformas: {', '.join(selected_platforms)})")
 
     # 4. Deduplicar por URL
     seen, unique = set(), []

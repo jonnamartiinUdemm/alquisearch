@@ -73,14 +73,6 @@ class HousingAnywhereScraper(BaseScraper):
         if params.max_price:
             query_params.append(f"priceMax={int(params.max_price)}")
 
-        # Habitaciones mínimas
-        if params.min_bedrooms and params.min_bedrooms > 1:
-            query_params.append(f"bedrooms={params.min_bedrooms}")
-
-        # Mascotas
-        if params.pets_allowed:
-            query_params.append("petsAllowed=true")
-
         # Larga estancia (mínimo 6 meses)
         if hasattr(params, 'long_stay') and params.long_stay:
             query_params.append("minDuration=6")
