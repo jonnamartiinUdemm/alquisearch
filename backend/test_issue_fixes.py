@@ -79,9 +79,10 @@ class TestRunner:
 
 def test_issue_1_housinganywhere_urls(t: TestRunner):
     """
-    HousingAnywhere generaba URLs con parámetros inválidos (petsAllowed, bedrooms)
-    que provocaban que la página no mostrara resultados.
-    La URL corregida solo debe incluir categories y priceMax.
+    HousingAnywhere es una SPA que usa segmentos de ruta para filtrar,
+    NO parámetros de query. Los query params como ?categories= o ?priceMax=
+    provocaban que la página mostrara 0 resultados.
+    La URL corregida usa /apartment-for-rent como path.
     """
     print("\n── Issue #1: Enlaces a HousingAnywhere ──")
 
@@ -98,31 +99,37 @@ def test_issue_1_housinganywhere_urls(t: TestRunner):
     t.assert_in("housinganywhere.com/s/Madrid--Spain", url,
                 "URL contiene path correcto para Madrid")
 
-    # Debe contener categories=apartment
-    t.assert_in("categories=apartment", url,
-                "URL incluye categories=apartment")
+    # Debe usar path /apartment-for-rent (NO query param categories=)
+    t.assert_in("/apartment-for-rent", url,
+                "URL usa /apartment-for-rent como path")
 
-    # Debe contener priceMax
-    t.assert_in("priceMax=2250", url,
-                "URL incluye priceMax=2250")
-
-    # NO debe contener petsAllowed (parámetro no reconocido por HA)
+    # NO debe contener query params — HA no los soporta
+    t.assert_not_in("?", url,
+                    "URL NO tiene query params (HA no los soporta)")
+    t.assert_not_in("categories=", url,
+                    "URL NO contiene categories= (HA ignora query params)")
+    t.assert_not_in("priceMax=", url,
+                    "URL NO contiene priceMax= (HA ignora query params)")
     t.assert_not_in("petsAllowed", url,
-                    "URL NO contiene petsAllowed (parámetro inválido)")
-
-    # NO debe contener bedrooms (parámetro no reconocido por HA)
+                    "URL NO contiene petsAllowed")
     t.assert_not_in("bedrooms", url,
-                    "URL NO contiene bedrooms (parámetro inválido)")
+                    "URL NO contiene bedrooms")
 
-    # Prueba con long_stay activado
+    # URL esperada exacta
+    t.assert_equal(url, "https://housinganywhere.com/s/Madrid--Spain/apartment-for-rent",
+                   "URL exacta para Madrid apartments")
+
+    # Prueba con long_stay activado — usa /long-term-rentals
     params_long = SearchParams(
         location="barcelona",
         max_price=1500,
         long_stay=True,
     )
     url_long = scraper.get_direct_search_url(params_long)
-    t.assert_in("minDuration=6", url_long,
-                "URL con long_stay incluye minDuration=6")
+    t.assert_in("/long-term-rentals", url_long,
+                "URL con long_stay usa /long-term-rentals")
+    t.assert_not_in("minDuration=", url_long,
+                    "URL NO tiene minDuration= (HA ignora query params)")
     t.assert_in("Barcelona--Spain", url_long,
                 "URL contiene slug correcto para Barcelona")
 
@@ -131,6 +138,8 @@ def test_issue_1_housinganywhere_urls(t: TestRunner):
     url_unknown = scraper.get_direct_search_url(params_unknown)
     t.assert_in("housinganywhere.com/s/Cuenca--Spain", url_unknown,
                 "Ciudad no mapeada genera slug genérico correcto")
+    t.assert_in("/apartment-for-rent", url_unknown,
+                "Ciudad no mapeada también usa /apartment-for-rent")
 
 
 # ════════════════════════════════════════════════════════════
@@ -329,7 +338,11 @@ def test_search_urls_integration(t: TestRunner):
         t.assert_true(url.startswith("http"), f"{platform}: URL empieza con http")
         t.assert_true(len(url) > 20, f"{platform}: URL tiene longitud razonable ({len(url)} chars)")
 
-    # HousingAnywhere NO debe tener petsAllowed ni bedrooms
+    # HousingAnywhere debe usar path-based URLs sin query params
+    t.assert_in("/apartment-for-rent", urls["housinganywhere"],
+                "search-urls: HousingAnywhere usa /apartment-for-rent")
+    t.assert_not_in("?", urls["housinganywhere"],
+                    "search-urls: HousingAnywhere sin query params")
     t.assert_not_in("petsAllowed", urls["housinganywhere"],
                     "search-urls: HousingAnywhere sin petsAllowed")
     t.assert_not_in("bedrooms", urls["housinganywhere"],

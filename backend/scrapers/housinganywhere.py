@@ -60,26 +60,28 @@ class HousingAnywhereScraper(BaseScraper):
         return f"{city_name}--Spain"
 
     def _build_search_url(self, params: SearchParams) -> str:
-        """Construye la URL de búsqueda para HousingAnywhere."""
+        """Construye la URL de búsqueda para HousingAnywhere.
+
+        HousingAnywhere es una SPA que usa segmentos de ruta para filtrar,
+        NO parámetros de query. Formatos válidos:
+          /s/{slug}/apartment-for-rent
+          /s/{slug}/studio-for-rent
+          /s/{slug}/long-term-rentals
+        Los query params como ?categories= o ?priceMax= son ignorados
+        por el frontend de HA y provocan "0 resultados".
+        """
         loc_slug = self._get_location_slug(params.location)
-        url = f"{self.BASE_URL}/s/{loc_slug}"
 
-        query_params = []
-
-        # Tipo: apartment (por defecto buscamos pisos)
-        query_params.append("categories=apartment")
-
-        # Precio máximo
-        if params.max_price:
-            query_params.append(f"priceMax={int(params.max_price)}")
-
-        # Larga estancia (mínimo 6 meses)
+        # Elegir segmento de ruta según tipo de búsqueda
         if hasattr(params, 'long_stay') and params.long_stay:
-            query_params.append("minDuration=6")
+            path_filter = "/long-term-rentals"
+        else:
+            # Por defecto buscamos apartamentos
+            path_filter = "/apartment-for-rent"
 
-        if query_params:
-            url += "?" + "&".join(query_params)
+        url = f"{self.BASE_URL}/s/{loc_slug}{path_filter}"
 
+        # NO añadir query params — HA no los soporta
         return url
 
     def _parse_listing(self, element: Tag, base_url: str = "") -> Optional[Property]:
