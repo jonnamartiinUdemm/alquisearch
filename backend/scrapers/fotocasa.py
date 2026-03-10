@@ -16,26 +16,26 @@ class FotocasaScraper(BaseScraper):
     BASE_URL = "https://www.fotocasa.es"
 
     LOCATION_MAP = {
-        "madrid": "madrid-capital/l",
-        "barcelona": "barcelona-capital/l",
-        "valencia": "valencia-capital/l",
-        "sevilla": "sevilla-capital/l",
-        "malaga": "malaga-capital/l",
-        "zaragoza": "zaragoza-capital/l",
-        "bilbao": "bilbao/l",
-        "alicante": "alicante-alacant-capital/l",
-        "cordoba": "cordoba-capital/l",
-        "valladolid": "valladolid-capital/l",
-        "granada": "granada-capital/l",
-        "murcia": "murcia-capital/l",
-        "palma": "palma-de-mallorca/l",
-        "las palmas": "las-palmas-de-gran-canaria/l",
-        "san sebastian": "donostia-san-sebastian/l",
-        "santander": "santander/l",
-        "gijon": "gijon/l",
-        "oviedo": "oviedo/l",
-        "vigo": "vigo/l",
-        "a coruna": "a-coruna/l",
+        "madrid": "madrid-capital/todas-las-zonas/l",
+        "barcelona": "barcelona-capital/todas-las-zonas/l",
+        "valencia": "valencia-capital/todas-las-zonas/l",
+        "sevilla": "sevilla-capital/todas-las-zonas/l",
+        "malaga": "malaga-capital/todas-las-zonas/l",
+        "zaragoza": "zaragoza-capital/todas-las-zonas/l",
+        "bilbao": "bilbao/todas-las-zonas/l",
+        "alicante": "alicante-alacant-capital/todas-las-zonas/l",
+        "cordoba": "cordoba-capital/todas-las-zonas/l",
+        "valladolid": "valladolid-capital/todas-las-zonas/l",
+        "granada": "granada-capital/todas-las-zonas/l",
+        "murcia": "murcia-capital/todas-las-zonas/l",
+        "palma": "palma-de-mallorca/todas-las-zonas/l",
+        "las palmas": "las-palmas-de-gran-canaria/todas-las-zonas/l",
+        "san sebastian": "donostia-san-sebastian/todas-las-zonas/l",
+        "santander": "santander/todas-las-zonas/l",
+        "gijon": "gijon/todas-las-zonas/l",
+        "oviedo": "oviedo/todas-las-zonas/l",
+        "vigo": "vigo/todas-las-zonas/l",
+        "a coruna": "a-coruna/todas-las-zonas/l",
     }
 
     def _get_location_slug(self, location: str) -> str:
@@ -43,7 +43,7 @@ class FotocasaScraper(BaseScraper):
         for key, slug in self.LOCATION_MAP.items():
             if key in loc or loc in key:
                 return slug
-        return f"{loc}/l"
+        return f"{loc}/todas-las-zonas/l"
 
     def _build_search_url(self, params: SearchParams) -> str:
         loc_slug = self._get_location_slug(params.location)

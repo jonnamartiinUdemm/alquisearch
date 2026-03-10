@@ -17,7 +17,7 @@ class IdealistaScraper(BaseScraper):
 
     # Mapeo de ciudades/provincias principales a slugs
     LOCATION_MAP = {
-        "madrid": "madrid-madrid",
+        "madrid": "madrid",
         "barcelona": "barcelona",
         "valencia": "valencia",
         "sevilla": "sevilla-sevilla",

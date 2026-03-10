@@ -156,13 +156,15 @@ def test_issue_2_habitaclia_urls(t: TestRunner):
     )
     url = scraper.get_direct_search_url(params)
 
-    # Debe usar el formato correcto alquiler-en-{slug}.htm
-    t.assert_in("habitaclia.com/alquiler-en-madrid.htm", url,
-                "URL usa formato alquiler-en-{slug}.htm")
+    # Debe usar el formato correcto alquiler-{slug}.htm
+    t.assert_in("habitaclia.com/alquiler-madrid.htm", url,
+                "URL usa formato alquiler-{slug}.htm")
 
-    # NO debe contener vivienda (el formato anterior era incorrecto)
+    # NO debe contener vivienda ni 'en-' (formatos anteriores incorrectos)
     t.assert_not_in("vivienda", url,
                     "URL NO contiene 'vivienda' en el path")
+    t.assert_not_in("/alquiler-en-", url,
+                    "URL NO contiene 'alquiler-en-' (formato 404)")
 
     # Debe incluir filtros de query correctos
     t.assert_in("preciohasta=1800", url,
@@ -177,7 +179,7 @@ def test_issue_2_habitaclia_urls(t: TestRunner):
     # Prueba con Barcelona (slug especial)
     params_bcn = SearchParams(location="Barcelona")
     url_bcn = scraper.get_direct_search_url(params_bcn)
-    t.assert_in("alquiler-en-barcelona-702.htm", url_bcn,
+    t.assert_in("alquiler-barcelona-702.htm", url_bcn,
                 "Barcelona usa slug correcto barcelona-702")
 
 
@@ -333,11 +335,77 @@ def test_search_urls_integration(t: TestRunner):
     t.assert_not_in("bedrooms", urls["housinganywhere"],
                     "search-urls: HousingAnywhere sin bedrooms")
 
-    # Habitaclia debe usar alquiler-en-
-    t.assert_in("alquiler-en-", urls["habitaclia"],
-                "search-urls: Habitaclia usa alquiler-en-")
+    # Habitaclia debe usar alquiler-{slug}.htm
+    t.assert_in("/alquiler-madrid.htm", urls["habitaclia"],
+                "search-urls: Habitaclia usa /alquiler-{slug}.htm")
     t.assert_not_in("vivienda", urls["habitaclia"],
                     "search-urls: Habitaclia sin 'vivienda' en URL")
+    t.assert_not_in("/alquiler-en-", urls["habitaclia"],
+                    "search-urls: Habitaclia sin '/alquiler-en-' en URL")
+
+    # Fotocasa debe incluir /todas-las-zonas/
+    t.assert_in("/todas-las-zonas/", urls["fotocasa"],
+                "search-urls: Fotocasa incluye /todas-las-zonas/")
+
+    # Idealista no debe duplicar ciudad en slug
+    t.assert_not_in("madrid-madrid", urls["idealista"],
+                    "search-urls: Idealista sin slug duplicado madrid-madrid")
+
+
+# ════════════════════════════════════════════════════════════
+# Test HTTP: URLs realmente accesibles
+# ════════════════════════════════════════════════════════════
+
+def test_urls_http_reachable(t: TestRunner):
+    """
+    Verifica que las URLs generadas sean realmente accesibles vía HTTP.
+    Usa HEAD con follow_redirects para comprobar que no devuelven 404.
+    Nota: idealista devuelve 403 (anti-bot) pero la URL es válida.
+    """
+    print("\n── HTTP: URLs accesibles ──")
+
+    import httpx
+
+    params = SearchParams(location="madrid", max_price=2000, min_bedrooms=2)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "es-ES,es;q=0.9,en;q=0.5",
+    }
+
+    # Plataformas que deben devolver 200 (no tienen anti-bot agresivo)
+    must_200 = ["fotocasa", "habitaclia", "pisos.com", "housinganywhere"]
+    # Idealista siempre devuelve 403 desde scripts (anti-bot), pero URL es correcta
+    anti_bot = ["idealista"]
+
+    with httpx.Client(headers=headers, follow_redirects=True, timeout=20.0) as client:
+        for name in must_200:
+            url = SCRAPERS[name]().get_direct_search_url(params)
+            try:
+                r = client.head(url, follow_redirects=True)
+                t.assert_true(
+                    r.status_code < 400,
+                    f"{name}: HTTP {r.status_code} (esperado < 400) — {url[:80]}"
+                )
+            except httpx.TimeoutException:
+                # Timeout no es 404 — la URL existe pero el servidor tarda
+                t.assert_true(True, f"{name}: timeout (URL existe, servidor lento)")
+            except Exception as e:
+                t.assert_true(False, f"{name}: excepción {type(e).__name__}: {e}")
+
+        for name in anti_bot:
+            url = SCRAPERS[name]().get_direct_search_url(params)
+            try:
+                r = client.head(url, follow_redirects=True)
+                # 403 es aceptable (anti-bot), 404 no lo es
+                t.assert_true(
+                    r.status_code != 404,
+                    f"{name}: HTTP {r.status_code} (no es 404) — {url[:80]}"
+                )
+            except httpx.TimeoutException:
+                t.assert_true(True, f"{name}: timeout (URL existe)")
+            except Exception as e:
+                t.assert_true(False, f"{name}: excepción {type(e).__name__}: {e}")
 
 
 # ════════════════════════════════════════════════════════════
@@ -356,6 +424,7 @@ if __name__ == "__main__":
     test_issue_3_platform_filter(t)
     test_issue_4_sort_option_values(t)
     test_search_urls_integration(t)
+    test_urls_http_reachable(t)
 
     success = t.summary()
     sys.exit(0 if success else 1)

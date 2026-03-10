@@ -45,7 +45,7 @@ class HabitacliaScraper(BaseScraper):
 
     def _build_search_url(self, params: SearchParams) -> str:
         loc_slug = self._get_location_slug(params.location)
-        url = f"{self.BASE_URL}/alquiler-en-{loc_slug}.htm"
+        url = f"{self.BASE_URL}/alquiler-{loc_slug}.htm"
 
         query_params = []
         if params.max_price:
