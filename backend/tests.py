@@ -539,43 +539,6 @@ def test_parallel_execution(runner):
     runner.assert_true("a" in results and "b" in results and "c" in results, "Todos los nombres presentes")
 
 
-def test_demo_data_volume(runner):
-    """Tests de volumen de datos de demostración."""
-    print("\n[VOLUMEN DE DATOS DEMO]")
-
-    from demo_data import DEMO_PROPERTIES as demos
-    from collections import Counter
-
-    runner.assert_true(len(demos) >= 100, f"Al menos 100 demos generadas ({len(demos)})")
-
-    cities = Counter(p.city for p in demos)
-    runner.assert_true(len(cities) >= 10, f"Al menos 10 ciudades cubiertas ({len(cities)})")
-    runner.assert_true(cities["Madrid"] >= 15, f"Madrid tiene >= 15 demos ({cities['Madrid']})")
-    runner.assert_true(cities["Barcelona"] >= 15, f"Barcelona tiene >= 15 demos ({cities['Barcelona']})")
-    runner.assert_true(cities["Valencia"] >= 10, f"Valencia tiene >= 10 demos ({cities['Valencia']})")
-
-    # Todas las demos deben tener ID único
-    ids = [p.id for p in demos]
-    runner.assert_equal(len(ids), len(set(ids)), "Todas las demos tienen ID único")
-
-    # Todas deben admitir mascotas
-    all_pets = all(p.pets_allowed for p in demos)
-    runner.assert_true(all_pets, "Todas las demos admiten mascotas")
-
-    # Plataformas variadas
-    platforms = set(p.platform for p in demos)
-    runner.assert_true(len(platforms) >= 4, f"Al menos 4 plataformas representadas ({len(platforms)})")
-
-    # Precios dentro de rango razonable
-    prices = [p.price for p in demos if p.price > 0]
-    runner.assert_true(min(prices) >= 500, f"Precio mínimo >= 500 ({min(prices)})")
-    runner.assert_true(max(prices) <= 3000, f"Precio máximo <= 3000 ({max(prices)})")
-
-    # Habitaciones >= 2
-    beds = [p.bedrooms for p in demos]
-    runner.assert_true(min(beds) >= 2, f"Mín habitaciones >= 2 ({min(beds)})")
-
-
 async def test_api_integration(runner):
     """Tests de integración de la API (requiere servidor corriendo)."""
     print("\n[INTEGRACIÓN API]")
@@ -816,7 +779,6 @@ def main():
     test_pagination_urls(runner)
     test_relaxed_filters(runner)
     test_parallel_execution(runner)
-    test_demo_data_volume(runner)
 
     # New tests
     test_cache_module(runner)

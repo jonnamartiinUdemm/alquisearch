@@ -10,7 +10,6 @@ from fastapi import APIRouter, Query
 
 from models import Property, SearchParams, SearchResult
 from filters import filter_properties
-from demo_data import DEMO_PROPERTIES
 from cache import get_cached, set_cached, params_to_hash
 from neighborhoods import get_suggestions
 from config import SCRAPERS, COASTAL_CITIES, SPANISH_CITIES, normalize
@@ -30,7 +29,7 @@ async def get_cities(q: str = Query("", description="Filtro de búsqueda")):
 async def search_properties(params: SearchParams):
     """
     Busca propiedades en todas las plataformas configuradas.
-    Combina resultados de scraping real con datos de demostración.
+    Solo devuelve resultados reales de scraping — sin datos demo.
     """
     all_properties: List[Property] = []
     errors: List[str] = []
@@ -73,46 +72,16 @@ async def search_properties(params: SearchParams):
         if all_properties:
             set_cached(params.location, p_hash, [p.model_dump() for p in all_properties])
 
-    # 3. Datos de demostración filtrados por ubicación
-    location_lower = params.location.lower().strip()
-    search_neighborhood, search_city = "", location_lower
-    if "," in location_lower:
-        parts = [p.strip() for p in location_lower.split(",", 1)]
-        search_neighborhood, search_city = parts[0], parts[1]
-
-    demo_filtered = []
-    for prop in DEMO_PROPERTIES:
-        if not location_lower:
-            demo_filtered.append(prop.model_copy(deep=True))
-            continue
-        city_n = normalize(prop.city)
-        hood_n = normalize(prop.neighborhood)
-        prov_n = normalize(prop.province)
-        if search_neighborhood:
-            if normalize(search_city) in city_n and normalize(search_neighborhood) in hood_n:
-                demo_filtered.append(prop.model_copy(deep=True))
-        else:
-            loc_n = normalize(location_lower)
-            if loc_n in f"{city_n} {prov_n} {hood_n}":
-                demo_filtered.append(prop.model_copy(deep=True))
-
-    # Filtrar datos demo por plataformas seleccionadas
-    selected_platforms = set(params.platforms)
-    demo_filtered = [p for p in demo_filtered if p.platform in selected_platforms]
-
-    all_properties.extend(demo_filtered)
-    print(f"[Demo] {len(demo_filtered)} propiedades añadidas (plataformas: {', '.join(selected_platforms)})")
-
-    # 4. Deduplicar por URL
+    # 3. Deduplicar por URL
     seen, unique = set(), []
     for prop in all_properties:
         if prop.url not in seen:
             seen.add(prop.url)
             unique.append(prop)
 
-    # 5. Filtrar y puntuar
+    # 4. Filtrar y puntuar
     filtered = filter_properties(unique, params)
-    print(f"=== Total: {len(filtered)} propiedades ===")
+    print(f"=== Total: {len(filtered)} propiedades reales ===")
 
     return SearchResult(
         properties=filtered,

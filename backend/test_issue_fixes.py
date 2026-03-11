@@ -198,76 +198,40 @@ def test_issue_2_habitaclia_urls(t: TestRunner):
 
 def test_issue_3_platform_filter(t: TestRunner):
     """
-    El buscador ignoraba el filtro de plataforma para los datos de demostración.
-    Las propiedades demo deben filtrarse por la plataforma seleccionada.
+    El buscador debe respetar el filtro de plataformas seleccionadas.
+    Solo se deben ejecutar los scrapers de las plataformas marcadas.
     """
     print("\n── Issue #3: Filtro por sitio ──")
 
-    from demo_data import DEMO_PROPERTIES
-    from config import normalize
+    from config import SCRAPERS
 
-    # Verificar que los datos demo tienen plataformas asignadas
-    platforms_in_demo = set(p.platform for p in DEMO_PROPERTIES)
-    t.assert_true(len(platforms_in_demo) > 1,
-                  f"Demo data tiene múltiples plataformas: {platforms_in_demo}")
+    # Verificar que hay múltiples scrapers disponibles
+    available = list(SCRAPERS.keys())
+    t.assert_true(len(available) >= 5,
+                  f"Al menos 5 scrapers disponibles: {available}")
 
-    # Simular el filtrado de demo data como lo hace search.py
-    location = "madrid"
-    location_lower = location.lower().strip()
+    # Verificar que cada plataforma tiene su scraper
+    expected_platforms = ["idealista", "fotocasa", "habitaclia", "pisos.com", "housinganywhere"]
+    for plat in expected_platforms:
+        t.assert_true(plat in SCRAPERS,
+                      f"Scraper '{plat}' está registrado en SCRAPERS")
 
-    def get_demo_filtered(platforms_list):
-        """Replica la lógica de filtrado de search.py con el fix aplicado."""
-        demo_filtered = []
-        for prop in DEMO_PROPERTIES:
-            city_n = normalize(prop.city)
-            hood_n = normalize(prop.neighborhood)
-            prov_n = normalize(prop.province)
-            loc_n = normalize(location_lower)
-            if loc_n in f"{city_n} {prov_n} {hood_n}":
-                demo_filtered.append(prop)
+    # Verificar que la lógica de search.py solo ejecuta plataformas válidas
+    search_path = os.path.join(os.path.dirname(__file__), "routers", "search.py")
+    with open(search_path, "r", encoding="utf-8") as f:
+        search_code = f.read()
 
-        # Fix: filtrar por plataformas seleccionadas
-        selected_platforms = set(platforms_list)
-        demo_filtered = [p for p in demo_filtered if p.platform in selected_platforms]
-        return demo_filtered
+    # Debe filtrar por plataformas seleccionadas
+    t.assert_true("valid_platforms = [p for p in params.platforms if p in SCRAPERS]" in search_code,
+                  "search.py filtra plataformas por las seleccionadas")
 
-    # Con todas las plataformas
-    all_platform_results = get_demo_filtered(
-        ["idealista", "fotocasa", "habitaclia", "pisos.com", "housinganywhere"]
-    )
-    t.assert_true(len(all_platform_results) > 0,
-                  f"Madrid tiene resultados demo ({len(all_platform_results)} props)")
+    # NO debe importar demo_data
+    t.assert_true("from demo_data import" not in search_code,
+                  "search.py NO importa demo_data")
 
-    # Solo idealista
-    idealista_only = get_demo_filtered(["idealista"])
-    t.assert_true(
-        all(p.platform == "idealista" for p in idealista_only),
-        "Filtro 'idealista' solo devuelve propiedades de idealista"
-    )
-
-    # Solo fotocasa
-    fotocasa_only = get_demo_filtered(["fotocasa"])
-    t.assert_true(
-        all(p.platform == "fotocasa" for p in fotocasa_only),
-        "Filtro 'fotocasa' solo devuelve propiedades de fotocasa"
-    )
-
-    # Resultado filtrado debe ser subconjunto del total
-    t.assert_true(
-        len(idealista_only) + len(fotocasa_only) <= len(all_platform_results),
-        "Resultado por plataforma es subconjunto del total"
-    )
-
-    # Una sola plataforma debe dar menos resultados que todas
-    t.assert_true(
-        len(idealista_only) < len(all_platform_results),
-        f"idealista ({len(idealista_only)}) < total ({len(all_platform_results)})"
-    )
-
-    # Plataforma vacía devuelve 0
-    empty = get_demo_filtered([])
-    t.assert_equal(len(empty), 0,
-                   "Sin plataformas seleccionadas = 0 resultados")
+    # NO debe tener código de demo_filtered
+    t.assert_true("demo_filtered" not in search_code,
+                  "search.py NO tiene lógica de datos demo")
 
 
 # ════════════════════════════════════════════════════════════
