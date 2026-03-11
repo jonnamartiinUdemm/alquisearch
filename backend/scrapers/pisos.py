@@ -74,8 +74,8 @@ class PisosScraper(BaseScraper):
             prop = Property()
             prop.platform = self.PLATFORM_NAME
 
-            # Título y enlace
-            link = element.select_one("a.ad-preview__title, a[class*='title'], h3 a, a[href*='alquiler']")
+            # Título y enlace — confirmed: a.ad-preview__title
+            link = element.select_one("a.ad-preview__title, a[class*='title'], a[href*='alquilar'], a[href*='alquiler']")
             if link:
                 prop.title = link.get_text(strip=True)
                 href = link.get("href", "")

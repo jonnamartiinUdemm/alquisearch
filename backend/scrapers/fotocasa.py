@@ -69,58 +69,94 @@ class FotocasaScraper(BaseScraper):
         return url
 
     def _parse_listing(self, element: Tag, base_url: str = "") -> Optional[Property]:
+        """Parsea un article de Fotocasa usando extracción basada en texto.
+        
+        Fotocasa usa Tailwind CSS con clases dinámicas, así que no podemos
+        depender de selectores CSS estables. Extraemos datos del texto.
+        
+        Texto de ejemplo de un article con contenido SSR:
+        "Líder de zona•Olisson Club 1/24 14.000 €/mes Más de 3 meses 
+         Piso con ascensor en Almagro 3 habs·3 baños·274 m²·6ª Planta
+         ·Ascensor·Calefacción·Aire acondicionado·Trastero"
+        """
         try:
             prop = Property()
             prop.platform = self.PLATFORM_NAME
 
-            # Título y enlace
-            link = element.select_one("a.re-CardPackMinimal-info-container, a.re-Card-link, a[href*='/vivienda/']")
-            if link:
-                prop.title = link.get_text(strip=True)
-                href = link.get("href", "")
-                prop.url = f"{self.BASE_URL}{href}" if href.startswith("/") else href
-                prop.id = self._generate_id(prop.url)
+            # Enlace — buscar link a detalle de vivienda
+            link = element.select_one("a[href*='/vivienda/']")
+            if not link:
+                link = element.select_one("a[href*='/alquiler/']")
+            if not link:
+                return None
 
-            # Precio
-            price_el = element.select_one(".re-CardPrice, .re-Card-price, [class*='price']")
-            if price_el:
-                price_val = self._extract_number(price_el.get_text(strip=True))
-                if price_val:
-                    prop.price = price_val
+            href = link.get("href", "")
+            prop.url = f"{self.BASE_URL}{href}" if href.startswith("/") else href
+            prop.id = self._generate_id(prop.url)
 
-            # Características
-            features = element.select(".re-CardFeatures-feature, .re-Card-feature, [class*='feature']")
-            for feat in features:
-                text = feat.get_text(strip=True).lower()
-                num = self._extract_number(text)
-                if num:
-                    if "hab" in text or "dorm" in text:
-                        prop.bedrooms = int(num)
-                    elif "baño" in text or "bano" in text:
-                        prop.bathrooms = int(num)
-                    elif "m²" in text or "m2" in text:
-                        prop.area_m2 = num
+            # Extraer todo el texto del artículo
+            text = element.get_text(strip=True)
+            if len(text) < 30:
+                return None  # Artículo vacío (skeleton loader)
 
-            # Descripción
-            desc_el = element.select_one(".re-CardDescription, [class*='description']")
-            if desc_el:
-                prop.description = desc_el.get_text(strip=True)
-                desc_lower = prop.description.lower()
-                self._extract_features_from_text(prop, desc_lower)
+            # Precio — "14.000 €/mes" o "1.200€" o "950 €"
+            # Formato español: punto como separador de miles
+            price_match = re.search(r'(\d[\d.]*)\s*€', text)
+            if price_match:
+                price_str = price_match.group(1).replace(".", "")
+                try:
+                    price_val = float(price_str)
+                    # Sanity check: alquiler razonable (50€ - 30.000€/mes)
+                    if 50 <= price_val <= 30000:
+                        prop.price = price_val
+                except ValueError:
+                    pass
+
+            # Título — buscar texto tipo "Piso en/con ..." o construirlo
+            title_match = re.search(r'((?:Piso|Casa|Ático|Dúplex|Estudio|Apartamento|Chalet)[^·€\d]{5,80})', text)
+            if title_match:
+                prop.title = title_match.group(1).strip()
+            else:
+                # Usar la primera parte significativa del texto
+                prop.title = text[:80].strip()
+
+            # Habitaciones — "3 habs" o "3 hab."
+            beds_match = re.search(r'(\d+)\s*hab', text, re.IGNORECASE)
+            if beds_match:
+                prop.bedrooms = int(beds_match.group(1))
+
+            # Baños — "3 baños" o "2 baño"
+            baths_match = re.search(r'(\d+)\s*ba[ñn]o', text, re.IGNORECASE)
+            if baths_match:
+                prop.bathrooms = int(baths_match.group(1))
+
+            # Superficie — "274 m²" o "80m2"
+            area_match = re.search(r'(\d+)\s*m[²2]', text)
+            if area_match:
+                prop.area_m2 = float(area_match.group(1))
+
+            # Planta — "6ª Planta" o "3a planta"
+            floor_match = re.search(r'(\d+)[ªa]?\s*[Pp]lanta', text)
+            if floor_match:
+                prop.floor = floor_match.group(1)
+
+            # Features del texto
+            text_lower = text.lower()
+            self._extract_features_from_text(prop, text_lower)
 
             # Imagen
-            img = element.select_one("img")
+            img = element.select_one("img[src*='fotocasa'], img[src*='ccdn'], img[data-src]")
+            if not img:
+                img = element.select_one("img")
             if img:
                 src = img.get("src") or img.get("data-src") or ""
-                if src and "static" not in src:
+                if src and "static" not in src and "placeholder" not in src:
                     prop.images.append(src)
 
-            # Dirección
-            addr = element.select_one("[class*='address'], [class*='location']")
-            if addr:
-                prop.address = addr.get_text(strip=True)
-
-            return prop if prop.url else None
+            # Solo devolver si tiene datos reales (no skeleton)
+            if prop.price > 0 or prop.bedrooms > 0:
+                return prop
+            return None
 
         except Exception as e:
             print(f"[Fotocasa] Error parseando listado: {e}")
@@ -169,7 +205,11 @@ class FotocasaScraper(BaseScraper):
         base_url = self._build_search_url(params)
         seen_urls = set()
 
-        for page in range(1, self.MAX_PAGES + 1):
+        # Fotocasa es SPA — solo 1-5 artículos SSR por página, el resto son skeletons.
+        # Solo consultamos 2 páginas para no perder tiempo.
+        max_pages = min(self.MAX_PAGES, 2)
+
+        for page in range(1, max_pages + 1):
             url = self._build_page_url(base_url, page)
             print(f"[Fotocasa] Buscando página {page}: {url}")
 
@@ -179,15 +219,15 @@ class FotocasaScraper(BaseScraper):
                 break
 
             soup = self._parse_html(html)
-            listings = soup.select("article.re-CardPackMinimal, .re-Card, [data-type='property']")
-            if not listings:
-                listings = soup.select("article, [class*='Card']")
+            
+            # Buscar artículos — algunos son skeletons sin contenido
+            listings = soup.select("article")
 
             if not listings:
-                print(f"[Fotocasa] Sin resultados en página {page}, fin de paginación")
+                print(f"[Fotocasa] Sin artículos en página {page}")
                 break
 
-            print(f"[Fotocasa] Encontrados {len(listings)} listados en página {page}")
+            print(f"[Fotocasa] {len(listings)} artículos encontrados, extrayendo con contenido...")
 
             new_count = 0
             for listing in listings:
@@ -197,6 +237,8 @@ class FotocasaScraper(BaseScraper):
                     properties.append(prop)
                     seen_urls.add(prop.url)
                     new_count += 1
+
+            print(f"[Fotocasa] {new_count} propiedades con datos reales en página {page}")
 
             if new_count == 0:
                 break

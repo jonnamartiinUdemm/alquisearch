@@ -1,14 +1,28 @@
 """
 Scraper para Habitaclia (habitaclia.com).
+
+Habitaclia usa Cloudflare Lambda@Edge que bloquea httpx. Usamos cloudscraper
+con firefox/darwin que puede bypasear esta protección. cloudscraper es síncrono
+así que lo ejecutamos en ThreadPoolExecutor.
 """
 import re
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional
-from bs4 import Tag
+from bs4 import BeautifulSoup, Tag
+
+try:
+    import cloudscraper
+    HAS_CLOUDSCRAPER = True
+except ImportError:
+    HAS_CLOUDSCRAPER = False
 
 import sys
 sys.path.insert(0, '..')
 from models import Property, SearchParams
 from scrapers.base import BaseScraper, _text_denies_pets
+
+_executor = ThreadPoolExecutor(max_workers=3)
 
 
 class HabitacliaScraper(BaseScraper):
@@ -43,27 +57,68 @@ class HabitacliaScraper(BaseScraper):
                 return slug
         return loc
 
+    def __init__(self):
+        super().__init__()
+        if HAS_CLOUDSCRAPER:
+            self._scraper = cloudscraper.create_scraper(
+                browser={"browser": "firefox", "platform": "darwin"}
+            )
+        else:
+            self._scraper = None
+
+    def _fetch_sync(self, url: str) -> Optional[str]:
+        """Fetch síncrono con cloudscraper (para ejecutar en thread)."""
+        if not self._scraper:
+            return None
+        try:
+            import time
+            time.sleep(1.5)  # Rate limiting
+            resp = self._scraper.get(url, timeout=30)
+            if resp.status_code == 200 and len(resp.text) > 15000:
+                return resp.text
+            if "pardon" in resp.text.lower() or "interruption" in resp.text.lower():
+                print(f"[Habitaclia] Cloudflare challenge en: {url}")
+                return None
+            return resp.text if resp.status_code == 200 else None
+        except Exception as e:
+            print(f"[Habitaclia] Error fetch: {e}")
+            return None
+
+    async def _fetch_page(self, url: str) -> Optional[str]:
+        """Override: usa cloudscraper en un thread para bypass Cloudflare."""
+        if self._scraper:
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(_executor, self._fetch_sync, url)
+        # Fallback a httpx si no hay cloudscraper
+        return await super()._fetch_page(url)
+
     def _build_search_url(self, params: SearchParams) -> str:
         loc_slug = self._get_location_slug(params.location)
         url = f"{self.BASE_URL}/alquiler-{loc_slug}.htm"
 
-        query_params = []
+        # IMPORTANTE: Habitaclia bloquea con Cloudflare si usamos 2+ query params.
+        # Solo usamos UN filtro (el más impactante: precio máximo) y filtramos el
+        # resto client-side con filter_properties().
         if params.max_price:
-            query_params.append(f"preciohasta={int(params.max_price)}")
-        if params.min_bedrooms:
-            query_params.append(f"habdesde={params.min_bedrooms}")
-        if params.min_bathrooms:
-            query_params.append(f"banosdesde={params.min_bathrooms}")
-        if params.pets_allowed:
-            query_params.append("mascotas=si")
-        if params.need_elevator:
-            query_params.append("ascensor=si")
-        if params.prefer_terrace:
-            query_params.append("terraza=si")
+            url += f"?preciohasta={int(params.max_price)}"
 
-        if query_params:
-            url += "?" + "&".join(query_params)
+        return url
 
+    def get_direct_search_url(self, params: SearchParams) -> str:
+        """URL completa con todos los filtros para el usuario (no para scraping)."""
+        loc_slug = self._get_location_slug(params.location)
+        url = f"{self.BASE_URL}/alquiler-{loc_slug}.htm"
+        query_parts = []
+        if params.max_price:
+            query_parts.append(f"preciohasta={int(params.max_price)}")
+        if params.min_bedrooms and params.min_bedrooms > 0:
+            query_parts.append(f"habdesde={params.min_bedrooms}")
+        if getattr(params, 'pets_allowed', False):
+            query_parts.append("mascotas=si")
+        if getattr(params, 'need_elevator', False):
+            query_parts.append("ascensor=si")
+        if query_parts:
+            url += "?" + "&".join(query_parts)
         return url
 
     def _parse_listing(self, element: Tag, base_url: str = "") -> Optional[Property]:
@@ -71,51 +126,71 @@ class HabitacliaScraper(BaseScraper):
             prop = Property()
             prop.platform = self.PLATFORM_NAME
 
-            # Título y enlace
-            link = element.select_one("a.list-item-link, a[href*='alquiler'], h3 a, .property-link")
+            # Título y enlace — confirmed: h3.list-item-title > a
+            link = element.select_one("h3.list-item-title a")
+            if not link:
+                link = element.select_one("h3 a, a[href*='alquiler']")
             if link:
                 prop.title = link.get_text(strip=True)
                 href = link.get("href", "")
                 prop.url = f"{self.BASE_URL}{href}" if href.startswith("/") else href
                 prop.id = self._generate_id(prop.url)
 
-            # Precio
-            price_el = element.select_one(".list-item-price, .price, [class*='price']")
+            # Precio — confirmed: [itemprop='price'] => "2.500 €"
+            price_el = element.select_one("[itemprop='price']")
+            if not price_el:
+                price_el = element.select_one(".list-item-price, [class*='price']")
             if price_el:
                 price_val = self._extract_number(price_el.get_text(strip=True))
                 if price_val:
                     prop.price = price_val
 
-            # Características
-            features = element.select(".list-item-feature, .feature, [class*='feature']")
-            for feat in features:
-                text = feat.get_text(strip=True).lower()
-                num = self._extract_number(text)
-                if num:
-                    if "hab" in text or "dorm" in text:
-                        prop.bedrooms = int(num)
-                    elif "baño" in text or "bano" in text:
-                        prop.bathrooms = int(num)
-                    elif "m²" in text or "m2" in text:
-                        prop.area_m2 = num
+            # Características — confirmed: p.list-item-feature => "100m2- 3 habitaciones - 2 baños - 25,00€/m2"
+            feat_el = element.select_one("p.list-item-feature")
+            if feat_el:
+                feat_text = feat_el.get_text(strip=True).lower()
+                # Extraer habitaciones
+                m = re.search(r'(\d+)\s*habitaci', feat_text)
+                if m:
+                    prop.bedrooms = int(m.group(1))
+                # Extraer baños
+                m = re.search(r'(\d+)\s*ba[ñn]o', feat_text)
+                if m:
+                    prop.bathrooms = int(m.group(1))
+                # Extraer superficie — "100m2" o "100 m²"
+                m = re.search(r'(\d+)\s*m[²2]?', feat_text)
+                if m:
+                    prop.area_m2 = float(m.group(1))
 
-            # Descripción
-            desc_el = element.select_one(".list-item-description, .description, [class*='desc']")
+            # Ubicación — confirmed: p.list-item-location span => "Madrid - Ibiza"
+            loc_el = element.select_one("p.list-item-location span")
+            if not loc_el:
+                loc_el = element.select_one("p.list-item-location")
+            if loc_el:
+                loc_text = loc_el.get_text(strip=True)
+                prop.address = loc_text
+                # Separar ciudad y barrio: "Madrid - Ibiza"
+                if " - " in loc_text:
+                    parts = loc_text.split(" - ", 1)
+                    prop.city = parts[0].strip()
+                    prop.neighborhood = parts[1].strip()
+
+            # Descripción — confirmed: p.list-item-description
+            desc_el = element.select_one("p.list-item-description")
             if desc_el:
                 prop.description = desc_el.get_text(strip=True)
                 self._extract_features_from_text(prop, prop.description.lower())
 
-            # Imagen
-            img = element.select_one("img")
+            # Imagen — confirmed: img[itemprop='image']
+            img = element.select_one("img[itemprop='image']")
+            if not img:
+                img = element.select_one("img")
             if img:
                 src = img.get("src") or img.get("data-src") or ""
-                if src and "static" not in src:
+                if src:
+                    if src.startswith("//"):
+                        src = f"https:{src}"
                     prop.images.append(src)
-
-            # Dirección
-            addr = element.select_one(".list-item-location, [class*='location'], [class*='address']")
-            if addr:
-                prop.address = addr.get_text(strip=True)
 
             return prop if prop.url else None
 
@@ -175,9 +250,18 @@ class HabitacliaScraper(BaseScraper):
                 break
 
             soup = self._parse_html(html)
-            listings = soup.select("article.list-item, .listing-item, [data-listing-id]")
+
+            # Detectar Cloudflare challenge
+            if "Pardon Our Interruption" in html or len(html) < 15000:
+                print(f"[Habitaclia] Página bloqueada por Cloudflare en página {page}")
+                break
+
+            # Confirmed: article.js-list-item (15 per page)
+            listings = soup.select("article.js-list-item")
             if not listings:
-                listings = soup.select("article, .property-card")
+                listings = soup.select("article.list-item-container")
+            if not listings:
+                listings = soup.select("article")
 
             if not listings:
                 print(f"[Habitaclia] Sin resultados en página {page}, fin de paginación")
