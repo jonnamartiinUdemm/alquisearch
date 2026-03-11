@@ -6,6 +6,7 @@ import hashlib
 import random
 from typing import List
 from models import Property
+from neighborhood_streets import NEIGHBORHOOD_STREETS
 
 # Semilla fija para reproducibilidad
 _RNG = random.Random(42)
@@ -568,7 +569,12 @@ def _generate_property(city_name: str, city_info: dict, idx: int) -> Property:
 
     prop_id = _gen_id(city_name, idx)
     neighborhood = rng.choice(city_info["neighborhoods"])
-    street = rng.choice(city_info["streets"])
+    # Usar calles reales del barrio para coherencia geográfica
+    neighborhood_specific = NEIGHBORHOOD_STREETS.get(city_name, {}).get(neighborhood)
+    if neighborhood_specific:
+        street = rng.choice(neighborhood_specific)
+    else:
+        street = rng.choice(city_info["streets"])
     street_num = rng.randint(1, 120)
     address = f"{street}, {street_num}"
 
@@ -606,15 +612,9 @@ def _generate_property(city_name: str, city_info: dict, idx: int) -> Property:
     city_slug = city_name.lower().replace(" ", "-").replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
 
     if plat_name == "housinganywhere":
-        # URL filtrada específica para esta propiedad: precio, habitaciones, mascotas
+        # HousingAnywhere usa segmentos de ruta, NO query params
         ha_slug = HA_CITY_SLUGS.get(city_name, f"{city_name.replace(' ', '-')}--Spain")
-        url = (
-            f"https://housinganywhere.com/s/{ha_slug}"
-            f"?categories=apartment"
-            f"&priceMax={price}"
-            f"&bedrooms={bedrooms}"
-            f"&petsAllowed=true"
-        )
+        url = f"https://housinganywhere.com/s/{ha_slug}/apartment-for-rent"
         is_long_stay = True
     else:
         url = plat_url_tpl.format(city=city_slug)
