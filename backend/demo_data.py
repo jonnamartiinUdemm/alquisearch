@@ -607,7 +607,7 @@ def _generate_property(city_name: str, city_info: dict, idx: int) -> Property:
     has_sea_view = city_info["is_coastal"] and rng.random() > 0.7
     is_long_stay = rng.random() > 0.5
 
-    # Plataforma
+    # Plataforma — URLs con filtros específicos (precio, habitaciones, barrio)
     plat_name, plat_url_tpl = rng.choice(PLATFORMS)
     city_slug = city_name.lower().replace(" ", "-").replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
 
@@ -616,6 +616,18 @@ def _generate_property(city_name: str, city_info: dict, idx: int) -> Property:
         ha_slug = HA_CITY_SLUGS.get(city_name, f"{city_name.replace(' ', '-')}--Spain")
         url = f"https://housinganywhere.com/s/{ha_slug}/apartment-for-rent"
         is_long_stay = True
+    elif plat_name == "idealista":
+        # Idealista: /alquiler-viviendas/madrid/?maxPrice=X&minRooms=Y
+        url = f"https://www.idealista.com/alquiler-viviendas/{city_slug}/?maxPrice={price}&minRooms={bedrooms}"
+    elif plat_name == "fotocasa":
+        # Fotocasa: /alquiler/viviendas/madrid/todas-las-zonas/l?maxPrice=X&minRooms=Y
+        url = f"https://www.fotocasa.es/es/alquiler/viviendas/{city_slug}/todas-las-zonas/l?maxPrice={price}&minRooms={bedrooms}"
+    elif plat_name == "habitaclia":
+        # Habitaclia: /alquiler-madrid.htm?preciohasta=X&habdesde=Y
+        url = f"https://www.habitaclia.com/alquiler-{city_slug}.htm?preciohasta={price}&habdesde={bedrooms}"
+    elif plat_name == "pisos.com":
+        # pisos.com: /alquiler/pisos-madrid/?precio_max=X&habitaciones_min=Y
+        url = f"https://www.pisos.com/alquiler/pisos-{city_slug}/?precio_max={price}&habitaciones_min={bedrooms}"
     else:
         url = plat_url_tpl.format(city=city_slug)
 
@@ -706,6 +718,7 @@ def _generate_property(city_name: str, city_info: dict, idx: int) -> Property:
         energy_rating=rng.choice(ENERGY_RATINGS),
         has_sea_view=has_sea_view,
         is_long_stay=is_long_stay,
+        is_demo=True,
     )
     return prop
 

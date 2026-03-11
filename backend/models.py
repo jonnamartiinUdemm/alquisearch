@@ -63,6 +63,7 @@ class Property(BaseModel):
     is_long_stay: bool = False
     scam_score: float = 0.0  # 0 = seguro, 1 = probable estafa
     score: float = 0.0  # puntuación general de preferencia
+    is_demo: bool = False  # True = propiedad demo (no existe como anuncio real)
 
 
 class SearchParams(BaseModel):

@@ -14,7 +14,7 @@ function renderProperties(properties) {
         });
     });
 
-    elements.resultsGrid.querySelectorAll('.btn-view').forEach(btn => {
+    elements.resultsGrid.querySelectorAll('.btn-view, .btn-view-demo').forEach(btn => {
         btn.addEventListener('click', (e) => { e.stopPropagation(); window.open(btn.dataset.url, '_blank'); });
     });
 
@@ -47,6 +47,7 @@ function createPropertyCard(prop, index) {
     const isTracked = trackedIds.has(prop.id);
 
     const badges = [`<span class="badge badge-platform">${escapeHtml(prop.platform)}</span>`];
+    if (prop.is_demo) badges.push('<span class="badge badge-demo" title="Propiedad de ejemplo — el enlace abre una búsqueda similar en la plataforma"><i class="fas fa-flask"></i> Demo</span>');
     const petsOn = elements.petsAllowed?.checked;
     if (prop.pets_allowed === true)  badges.push('<span class="badge badge-pets"><i class="fas fa-paw"></i> Mascotas ✓</span>');
     else if ((prop.pets_allowed == null) && petsOn) badges.push('<span class="badge badge-pets-unknown" title="Sin confirmar"><i class="fas fa-paw"></i> Sin confirmar</span>');
@@ -109,7 +110,10 @@ function createPropertyCard(prop, index) {
             ${tags.length ? `<div class="property-card-tags">${tags.join('')}</div>` : ''}
             <div class="property-card-footer">
                 <div class="property-card-availability"><i class="fas fa-calendar-alt"></i> ${prop.availability || 'Sin especificar'}</div>
-                <button class="btn-view" data-url="${escapeHtml(prop.url)}">Ver anuncio <i class="fas fa-external-link-alt"></i></button>
+                ${prop.is_demo
+                    ? `<button class="btn-view btn-view-demo" data-url="${escapeHtml(prop.url)}" title="Esta es una propiedad de ejemplo. El enlace abre una búsqueda con filtros similares en ${escapeHtml(prop.platform)}">Buscar similares <i class="fas fa-search"></i></button>`
+                    : `<button class="btn-view" data-url="${escapeHtml(prop.url)}">Ver anuncio <i class="fas fa-external-link-alt"></i></button>`
+                }
             </div>
         </div>
     </div>`;
