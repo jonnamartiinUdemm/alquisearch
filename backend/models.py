@@ -45,6 +45,7 @@ class Property(BaseModel):
     province: str = ""
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    location_precision: str = "approximate"
     availability: Optional[str] = None
     images: List[str] = Field(default_factory=list)
     url: str = ""

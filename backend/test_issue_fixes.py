@@ -17,6 +17,7 @@ from models import Property, SearchParams
 from scrapers.housinganywhere import HousingAnywhereScraper
 from scrapers.habitaclia import HabitacliaScraper
 from config import SCRAPERS
+from validation import has_valid_platform_url, normalize_coordinates
 
 
 class TestRunner:
@@ -385,6 +386,48 @@ def test_urls_http_reachable(t: TestRunner):
                 t.assert_true(False, f"{name}: excepción {type(e).__name__}: {e}")
 
 
+
+# ════════════════════════════════════════════════════════════
+# Issue #5: Integridad URL/plataforma y coordenadas
+# ════════════════════════════════════════════════════════════
+
+def test_issue_5_property_integrity_validations(t: TestRunner):
+    """Valida dominio de URL por plataforma y precisión de coordenadas."""
+    print("\n── Issue #5: Integridad de propiedades ──")
+
+    prop_ok = Property(
+        platform="idealista",
+        url="https://www.idealista.com/alquiler-viviendas/madrid/",
+        latitude=40.41,
+        longitude=-3.70,
+    )
+    normalize_coordinates(prop_ok)
+    t.assert_true(has_valid_platform_url(prop_ok),
+                  "URL de idealista válida para plataforma idealista")
+    t.assert_equal(prop_ok.location_precision, "exact",
+                   "Coordenadas válidas marcan location_precision=exact")
+
+    prop_bad_url = Property(
+        platform="idealista",
+        url="https://www.fotocasa.es/es/alquiler/viviendas/madrid/todas-las-zonas/l",
+    )
+    t.assert_true(not has_valid_platform_url(prop_bad_url),
+                  "URL de dominio cruzado se marca inválida")
+
+    prop_bad_coords = Property(
+        platform="fotocasa",
+        url="https://www.fotocasa.es/es/alquiler/viviendas/madrid/todas-las-zonas/l",
+        latitude=181,
+        longitude=-300,
+    )
+    normalize_coordinates(prop_bad_coords)
+    t.assert_equal(prop_bad_coords.latitude, None,
+                   "Latitud fuera de rango se limpia")
+    t.assert_equal(prop_bad_coords.longitude, None,
+                   "Longitud fuera de rango se limpia")
+    t.assert_equal(prop_bad_coords.location_precision, "approximate",
+                   "Coordenadas inválidas marcan location_precision=approximate")
+
 # ════════════════════════════════════════════════════════════
 # Main
 # ════════════════════════════════════════════════════════════
@@ -400,6 +443,7 @@ if __name__ == "__main__":
     test_issue_2_habitaclia_urls(t)
     test_issue_3_platform_filter(t)
     test_issue_4_sort_option_values(t)
+    test_issue_5_property_integrity_validations(t)
     test_search_urls_integration(t)
     test_urls_http_reachable(t)
 
