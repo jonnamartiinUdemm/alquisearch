@@ -13,6 +13,7 @@ from filters import filter_properties
 from cache import get_cached, set_cached, params_to_hash
 from neighborhoods import get_suggestions
 from config import SCRAPERS, COASTAL_CITIES, SPANISH_CITIES, normalize
+from validation import has_valid_platform_url, normalize_coordinates
 
 router = APIRouter(prefix="/api", tags=["search"])
 
@@ -51,8 +52,16 @@ async def search_properties(params: SearchParams):
             try:
                 print(f"--- Buscando en {platform_name} ---")
                 props = await scraper.search(params)
-                print(f"[{platform_name}] {len(props)} resultados")
-                return props
+                valid_props: List[Property] = []
+                discarded = 0
+                for prop in props:
+                    normalize_coordinates(prop)
+                    if has_valid_platform_url(prop):
+                        valid_props.append(prop)
+                    else:
+                        discarded += 1
+                print(f"[{platform_name}] {len(valid_props)} resultados válidos" + (f" ({discarded} descartados por URL inválida)" if discarded else ""))
+                return valid_props
             except Exception as e:
                 errors.append(f"Error en {platform_name}: {e}")
                 return []
@@ -72,11 +81,12 @@ async def search_properties(params: SearchParams):
         if all_properties:
             set_cached(params.location, p_hash, [p.model_dump() for p in all_properties])
 
-    # 3. Deduplicar por URL
+    # 3. Deduplicar por plataforma + URL
     seen, unique = set(), []
     for prop in all_properties:
-        if prop.url not in seen:
-            seen.add(prop.url)
+        dedupe_key = f"{prop.platform}::{prop.url}".lower().strip()
+        if dedupe_key not in seen:
+            seen.add(dedupe_key)
             unique.append(prop)
 
     # 4. Filtrar y puntuar

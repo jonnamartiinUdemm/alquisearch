@@ -32,8 +32,16 @@ const CITY_COORDS = {
     'tarragona':          [41.1189,  1.2445],
 };
 
+function normalizeCityKey(cityName) {
+    return (cityName || '')
+        .toLowerCase()
+        .trim()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+}
+
 function getCityCenter(cityName) {
-    return CITY_COORDS[cityName.toLowerCase().trim()] || [40.0, -3.7];
+    return CITY_COORDS[normalizeCityKey(cityName)] || [40.0, -3.7];
 }
 
 function initMap(properties) {
@@ -77,18 +85,20 @@ function initMap(properties) {
         let lat = prop.latitude;
         let lng = prop.longitude;
 
-        if (!lat || !lng) {
+        const hasExactCoords = Number.isFinite(lat) && Number.isFinite(lng);
+        const locationPrecision = hasExactCoords ? 'exact' : (prop.location_precision || 'approximate');
+
+        if (!hasExactCoords) {
             const center = getCityCenter(prop.city || searchParams.location || '');
-            const hash   = prop.id ? prop.id.charCodeAt(0) + (prop.id.charCodeAt(1) || 0) : index;
-            lat = center[0] + ((hash % 100) - 50) * 0.001;
-            lng = center[1] + (((hash * 7) % 100) - 50) * 0.001;
+            lat = center[0];
+            lng = center[1];
         }
 
-        if (lat && lng) {
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
             const priceStr = formatPrice(prop.price);
             const marker   = L.marker([lat, lng], {
                 icon: L.divIcon({
-                    html:      `<div class="price-marker${prop.has_sea_view ? ' sea-view' : ''}">${priceStr}€</div>`,
+                    html:      `<div class="price-marker${prop.has_sea_view ? ' sea-view' : ''}${locationPrecision !== 'exact' ? ' location-approx' : ''}">${priceStr}€</div>`,
                     className: 'custom-price-icon',
                     iconSize:  [80, 30],
                     iconAnchor:[40, 30],
@@ -106,6 +116,7 @@ function initMap(properties) {
                     <div style="font-size:.75rem;color:#6b7280;margin-bottom:6px;">
                         ${escapeHtml(prop.address || prop.neighborhood || prop.city)}
                         · <em>${escapeHtml(prop.platform)}</em>
+                        ${locationPrecision !== 'exact' ? ' · <span title="Ubicación aproximada por centro de ciudad">📍 aproximada</span>' : ''}
                     </div>
                     <a href="${escapeHtml(prop.url)}" target="_blank" rel="noopener" class="map-popup-link">
                         Ver anuncio <i class="fas fa-external-link-alt" style="font-size:.7rem;"></i>

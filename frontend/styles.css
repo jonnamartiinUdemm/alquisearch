@@ -1324,6 +1324,11 @@ body {
     z-index: 1000 !important;
 }
 
+
+.price-marker.location-approx {
+    border-style: dashed;
+    opacity: .88;
+}
 .price-marker.sea-view {
     border-color: #06b6d4;
 }
